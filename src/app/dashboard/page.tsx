@@ -75,7 +75,7 @@ export default function DashboardPage() {
             {getGreeting()}, {user?.name || 'Administrator'} 👋
           </h2>
           <p style={{ fontSize: 13, color: '#64748B', margin: '4px 0 0' }}>
-            Unified compliance view across {kpis.totalFirms || 3} registered organizations. {kpis.overdue > 0 ? `⚠️ ${kpis.overdue} tasks are overdue and require immediate filing.` : 'All systems operating within statutory parameters.'}
+            Monitor compliance status, statutory deadlines, and regulatory obligations across all organizations.
           </p>
         </div>
 
