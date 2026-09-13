@@ -1,0 +1,3514 @@
+{
+  "organizations": [
+    {
+      "id": "org_001",
+      "name": "Enterprise Compliance Group",
+      "address": null,
+      "logo_url": null,
+      "financial_year_start": 4,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    }
+  ],
+  "entity_types": [
+    {
+      "id": "et_01",
+      "name": "Private Limited Company",
+      "code": "PRIVATE_LIMITED",
+      "description": "Private Limited Company registered under Companies Act",
+      "status": "active"
+    },
+    {
+      "id": "et_02",
+      "name": "Public Limited Company",
+      "code": "PUBLIC_LIMITED",
+      "description": "Public Limited Company",
+      "status": "active"
+    },
+    {
+      "id": "et_03",
+      "name": "Limited Liability Partnership",
+      "code": "LLP",
+      "description": "LLP registered under LLP Act 2008",
+      "status": "active"
+    },
+    {
+      "id": "et_04",
+      "name": "Partnership Firm",
+      "code": "PARTNERSHIP",
+      "description": "Partnership firm under Partnership Act",
+      "status": "active"
+    },
+    {
+      "id": "et_05",
+      "name": "Proprietorship",
+      "code": "PROPRIETORSHIP",
+      "description": "Sole proprietorship",
+      "status": "active"
+    },
+    {
+      "id": "et_06",
+      "name": "Trust",
+      "code": "TRUST",
+      "description": "Trust registered under Trust Act",
+      "status": "active"
+    },
+    {
+      "id": "et_07",
+      "name": "Society",
+      "code": "SOCIETY",
+      "description": "Society registered under Societies Act",
+      "status": "active"
+    }
+  ],
+  "departments": [
+    {
+      "id": "dept_01",
+      "organization_id": "org_001",
+      "name": "Finance",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "dept_02",
+      "organization_id": "org_001",
+      "name": "Taxation",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "dept_03",
+      "organization_id": "org_001",
+      "name": "HR",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "dept_04",
+      "organization_id": "org_001",
+      "name": "Legal",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "dept_05",
+      "organization_id": "org_001",
+      "name": "Secretarial",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "dept_06",
+      "organization_id": "org_001",
+      "name": "Accounts",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "dept_07",
+      "organization_id": "org_001",
+      "name": "Operations",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "dept_08",
+      "organization_id": "org_001",
+      "name": "Management",
+      "head_user_id": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    }
+  ],
+  "roles": [
+    {
+      "id": "role_01",
+      "name": "Super Admin",
+      "description": "Root authority with full unrestricted administrative control. Only 1 Super Admin permitted.",
+      "is_system": 1,
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "role_02",
+      "name": "Admin",
+      "description": "System Administrator with full operational management and user permissions assignment rights.",
+      "is_system": 1,
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "role_03",
+      "name": "User",
+      "description": "Standard Staff & Compliance Officer. Operates compliance workflows based on assigned permissions.",
+      "is_system": 1,
+      "created_at": "2026-09-12 18:30:42"
+    }
+  ],
+  "permissions": [
+    {
+      "id": "perm_001",
+      "module": "dashboard",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_002",
+      "module": "dashboard",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_003",
+      "module": "dashboard",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_004",
+      "module": "dashboard",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_005",
+      "module": "dashboard",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_006",
+      "module": "dashboard",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_007",
+      "module": "dashboard",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_008",
+      "module": "dashboard",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_009",
+      "module": "dashboard",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_010",
+      "module": "dashboard",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_011",
+      "module": "firms",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_012",
+      "module": "firms",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_013",
+      "module": "firms",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_014",
+      "module": "firms",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_015",
+      "module": "firms",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_016",
+      "module": "firms",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_017",
+      "module": "firms",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_018",
+      "module": "firms",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_019",
+      "module": "firms",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_020",
+      "module": "firms",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_021",
+      "module": "compliance",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_022",
+      "module": "compliance",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_023",
+      "module": "compliance",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_024",
+      "module": "compliance",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_025",
+      "module": "compliance",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_026",
+      "module": "compliance",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_027",
+      "module": "compliance",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_028",
+      "module": "compliance",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_029",
+      "module": "compliance",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_030",
+      "module": "compliance",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_031",
+      "module": "calendar",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_032",
+      "module": "calendar",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_033",
+      "module": "calendar",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_034",
+      "module": "calendar",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_035",
+      "module": "calendar",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_036",
+      "module": "calendar",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_037",
+      "module": "calendar",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_038",
+      "module": "calendar",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_039",
+      "module": "calendar",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_040",
+      "module": "calendar",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_041",
+      "module": "tasks",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_042",
+      "module": "tasks",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_043",
+      "module": "tasks",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_044",
+      "module": "tasks",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_045",
+      "module": "tasks",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_046",
+      "module": "tasks",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_047",
+      "module": "tasks",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_048",
+      "module": "tasks",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_049",
+      "module": "tasks",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_050",
+      "module": "tasks",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_051",
+      "module": "documents",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_052",
+      "module": "documents",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_053",
+      "module": "documents",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_054",
+      "module": "documents",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_055",
+      "module": "documents",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_056",
+      "module": "documents",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_057",
+      "module": "documents",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_058",
+      "module": "documents",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_059",
+      "module": "documents",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_060",
+      "module": "documents",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_061",
+      "module": "reports",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_062",
+      "module": "reports",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_063",
+      "module": "reports",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_064",
+      "module": "reports",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_065",
+      "module": "reports",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_066",
+      "module": "reports",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_067",
+      "module": "reports",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_068",
+      "module": "reports",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_069",
+      "module": "reports",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_070",
+      "module": "reports",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_071",
+      "module": "users",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_072",
+      "module": "users",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_073",
+      "module": "users",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_074",
+      "module": "users",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_075",
+      "module": "users",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_076",
+      "module": "users",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_077",
+      "module": "users",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_078",
+      "module": "users",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_079",
+      "module": "users",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_080",
+      "module": "users",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_081",
+      "module": "audit",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_082",
+      "module": "audit",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_083",
+      "module": "audit",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_084",
+      "module": "audit",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_085",
+      "module": "audit",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_086",
+      "module": "audit",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_087",
+      "module": "audit",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_088",
+      "module": "audit",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_089",
+      "module": "audit",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_090",
+      "module": "audit",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_091",
+      "module": "settings",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_092",
+      "module": "settings",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_093",
+      "module": "settings",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_094",
+      "module": "settings",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_095",
+      "module": "settings",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_096",
+      "module": "settings",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_097",
+      "module": "settings",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_098",
+      "module": "settings",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_099",
+      "module": "settings",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_100",
+      "module": "settings",
+      "action": "download",
+      "description": null
+    },
+    {
+      "id": "perm_101",
+      "module": "notifications",
+      "action": "view",
+      "description": null
+    },
+    {
+      "id": "perm_102",
+      "module": "notifications",
+      "action": "create",
+      "description": null
+    },
+    {
+      "id": "perm_103",
+      "module": "notifications",
+      "action": "edit",
+      "description": null
+    },
+    {
+      "id": "perm_104",
+      "module": "notifications",
+      "action": "delete",
+      "description": null
+    },
+    {
+      "id": "perm_105",
+      "module": "notifications",
+      "action": "assign",
+      "description": null
+    },
+    {
+      "id": "perm_106",
+      "module": "notifications",
+      "action": "submit",
+      "description": null
+    },
+    {
+      "id": "perm_107",
+      "module": "notifications",
+      "action": "review",
+      "description": null
+    },
+    {
+      "id": "perm_108",
+      "module": "notifications",
+      "action": "approve",
+      "description": null
+    },
+    {
+      "id": "perm_109",
+      "module": "notifications",
+      "action": "export",
+      "description": null
+    },
+    {
+      "id": "perm_110",
+      "module": "notifications",
+      "action": "download",
+      "description": null
+    }
+  ],
+  "role_permissions": [
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_001"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_002"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_003"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_004"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_005"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_006"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_007"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_008"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_009"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_010"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_011"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_012"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_013"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_014"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_015"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_016"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_017"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_018"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_019"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_020"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_021"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_022"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_023"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_024"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_025"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_026"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_027"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_028"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_029"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_030"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_031"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_032"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_033"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_034"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_035"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_036"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_037"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_038"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_039"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_040"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_041"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_042"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_043"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_044"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_045"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_046"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_047"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_048"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_049"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_050"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_051"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_052"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_053"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_054"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_055"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_056"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_057"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_058"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_059"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_060"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_061"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_062"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_063"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_064"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_065"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_066"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_067"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_068"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_069"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_070"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_071"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_072"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_073"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_074"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_075"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_076"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_077"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_078"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_079"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_080"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_081"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_082"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_083"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_084"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_085"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_086"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_087"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_088"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_089"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_090"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_091"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_092"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_093"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_094"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_095"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_096"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_097"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_098"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_099"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_100"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_101"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_102"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_103"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_104"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_105"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_106"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_107"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_108"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_109"
+    },
+    {
+      "role_id": "role_01",
+      "permission_id": "perm_110"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_001"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_002"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_003"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_004"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_005"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_006"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_007"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_008"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_009"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_010"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_011"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_012"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_013"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_014"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_015"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_016"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_017"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_018"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_019"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_020"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_021"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_022"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_023"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_024"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_025"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_026"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_027"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_028"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_029"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_030"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_031"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_032"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_033"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_034"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_035"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_036"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_037"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_038"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_039"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_040"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_041"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_042"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_043"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_044"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_045"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_046"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_047"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_048"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_049"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_050"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_051"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_052"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_053"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_054"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_055"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_056"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_057"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_058"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_059"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_060"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_061"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_062"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_063"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_064"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_065"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_066"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_067"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_068"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_069"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_070"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_071"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_072"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_073"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_074"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_075"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_076"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_077"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_078"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_079"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_080"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_081"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_082"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_083"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_084"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_085"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_086"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_087"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_088"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_089"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_090"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_091"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_092"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_093"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_094"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_095"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_096"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_097"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_098"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_099"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_100"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_101"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_102"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_103"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_104"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_105"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_106"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_107"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_108"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_109"
+    },
+    {
+      "role_id": "role_02",
+      "permission_id": "perm_110"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_088"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_085"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_082"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_084"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_090"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_083"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_089"
+    },
+    {
+      "role_id": "role_03",
+      "permission_id": "perm_087"
+    }
+  ],
+  "compliance_categories": [
+    {
+      "id": "cat_01",
+      "name": "GST",
+      "code": "GST",
+      "description": "Goods and Services Tax",
+      "color": "#10B981",
+      "icon": "\ud83e\uddfe",
+      "sort_order": 1,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_02",
+      "name": "Income Tax",
+      "code": "IT",
+      "description": "Income Tax compliances",
+      "color": "#3B82F6",
+      "icon": "\ud83d\udcb0",
+      "sort_order": 2,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_03",
+      "name": "TDS",
+      "code": "TDS",
+      "description": "Tax Deducted at Source",
+      "color": "#8B5CF6",
+      "icon": "\ud83d\udcca",
+      "sort_order": 3,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_04",
+      "name": "ROC / MCA",
+      "code": "MCA",
+      "description": "Ministry of Corporate Affairs filings",
+      "color": "#F59E0B",
+      "icon": "\ud83c\udfdb\ufe0f",
+      "sort_order": 4,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_05",
+      "name": "PF",
+      "code": "PF",
+      "description": "Provident Fund",
+      "color": "#EF4444",
+      "icon": "\ud83d\udc65",
+      "sort_order": 5,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_06",
+      "name": "ESI",
+      "code": "ESI",
+      "description": "Employee State Insurance",
+      "color": "#EC4899",
+      "icon": "\ud83c\udfe5",
+      "sort_order": 6,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_07",
+      "name": "Professional Tax",
+      "code": "PT",
+      "description": "Professional Tax",
+      "color": "#14B8A6",
+      "icon": "\ud83d\udccb",
+      "sort_order": 7,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_08",
+      "name": "Labour Compliance",
+      "code": "LABOUR",
+      "description": "Labour law compliances",
+      "color": "#F97316",
+      "icon": "\u2696\ufe0f",
+      "sort_order": 8,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_09",
+      "name": "Payroll",
+      "code": "PAYROLL",
+      "description": "Payroll processing",
+      "color": "#6366F1",
+      "icon": "\ud83d\udcb3",
+      "sort_order": 9,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_10",
+      "name": "Accounting",
+      "code": "ACCT",
+      "description": "Accounting compliances",
+      "color": "#0EA5E9",
+      "icon": "\ud83d\udcd2",
+      "sort_order": 10,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_11",
+      "name": "Secretarial",
+      "code": "SECY",
+      "description": "Secretarial compliance",
+      "color": "#A855F7",
+      "icon": "\ud83d\udcdd",
+      "sort_order": 11,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_12",
+      "name": "Annual Filings",
+      "code": "ANNUAL",
+      "description": "Annual filing requirements",
+      "color": "#D946EF",
+      "icon": "\ud83d\udcc5",
+      "sort_order": 12,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_13",
+      "name": "Board / Governance",
+      "code": "BOARD",
+      "description": "Board meetings and governance",
+      "color": "#0891B2",
+      "icon": "\ud83c\udfe2",
+      "sort_order": 13,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_14",
+      "name": "Licenses & Renewals",
+      "code": "LICENSE",
+      "description": "Licenses and renewals",
+      "color": "#059669",
+      "icon": "\ud83e\udeaa",
+      "sort_order": 14,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_15",
+      "name": "Internal MIS",
+      "code": "MIS",
+      "description": "Internal MIS requirements",
+      "color": "#7C3AED",
+      "icon": "\ud83d\udcc8",
+      "sort_order": 15,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "cat_16",
+      "name": "Other Statutory",
+      "code": "OTHER",
+      "description": "Other statutory compliances",
+      "color": "#64748B",
+      "icon": "\ud83d\udccc",
+      "sort_order": 16,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42"
+    }
+  ],
+  "compliances": [
+    {
+      "id": "comp_01",
+      "category_id": "cat_01",
+      "name": "GSTR-1",
+      "code": "GSTR1",
+      "description": "Monthly return of outward supplies",
+      "authority": "CBIC",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 11,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_02",
+      "category_id": "cat_01",
+      "name": "GSTR-3B",
+      "code": "GSTR3B",
+      "description": "Monthly summary return and tax payment",
+      "authority": "CBIC",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 20,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_03",
+      "category_id": "cat_01",
+      "name": "GSTR-9",
+      "code": "GSTR9",
+      "description": "Annual GST return",
+      "authority": "CBIC",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_04",
+      "category_id": "cat_01",
+      "name": "GSTR-9C",
+      "code": "GSTR9C",
+      "description": "GST reconciliation statement",
+      "authority": "CBIC",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_05",
+      "category_id": "cat_01",
+      "name": "ITC Reconciliation",
+      "code": "ITC_RECON",
+      "description": "Input Tax Credit reconciliation",
+      "authority": "CBIC",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 25,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_06",
+      "category_id": "cat_01",
+      "name": "GST Payment",
+      "code": "GST_PAY",
+      "description": "GST tax payment challan",
+      "authority": "CBIC",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 20,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_07",
+      "category_id": "cat_03",
+      "name": "TDS Return - 24Q",
+      "code": "TDS24Q",
+      "description": "Quarterly TDS return for salaries",
+      "authority": "Income Tax Dept",
+      "frequency": "quarterly",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_08",
+      "category_id": "cat_03",
+      "name": "TDS Return - 26Q",
+      "code": "TDS26Q",
+      "description": "Quarterly TDS return for non-salary",
+      "authority": "Income Tax Dept",
+      "frequency": "quarterly",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_09",
+      "category_id": "cat_03",
+      "name": "TDS Return - 27Q",
+      "code": "TDS27Q",
+      "description": "Quarterly TDS return for NRI payments",
+      "authority": "Income Tax Dept",
+      "frequency": "quarterly",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_10",
+      "category_id": "cat_03",
+      "name": "TDS Certificate - 16A",
+      "code": "TDS16A",
+      "description": "Issue TDS certificates to deductees",
+      "authority": "Income Tax Dept",
+      "frequency": "quarterly",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_11",
+      "category_id": "cat_03",
+      "name": "Form 16",
+      "code": "FORM16",
+      "description": "Annual TDS certificate for employees",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_12",
+      "category_id": "cat_03",
+      "name": "TDS Payment",
+      "code": "TDS_PAY",
+      "description": "Monthly TDS payment challan",
+      "authority": "Income Tax Dept",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 7,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_13",
+      "category_id": "cat_02",
+      "name": "Advance Tax - Q1",
+      "code": "ADV_Q1",
+      "description": "First installment of advance tax",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_14",
+      "category_id": "cat_02",
+      "name": "Advance Tax - Q2",
+      "code": "ADV_Q2",
+      "description": "Second installment of advance tax",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_15",
+      "category_id": "cat_02",
+      "name": "Advance Tax - Q3",
+      "code": "ADV_Q3",
+      "description": "Third installment of advance tax",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_16",
+      "category_id": "cat_02",
+      "name": "Advance Tax - Q4",
+      "code": "ADV_Q4",
+      "description": "Fourth installment of advance tax",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_17",
+      "category_id": "cat_02",
+      "name": "Income Tax Return (ITR)",
+      "code": "ITR",
+      "description": "Annual Income Tax Return filing",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_18",
+      "category_id": "cat_02",
+      "name": "Tax Audit Report",
+      "code": "TAX_AUDIT",
+      "description": "Tax audit under section 44AB",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_19",
+      "category_id": "cat_04",
+      "name": "AOC-4 (Financial Statements)",
+      "code": "AOC4",
+      "description": "Filing of financial statements",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_20",
+      "category_id": "cat_04",
+      "name": "MGT-7 (Annual Return)",
+      "code": "MGT7",
+      "description": "Filing of annual return",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 60,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_21",
+      "category_id": "cat_04",
+      "name": "ADT-1 (Auditor Appointment)",
+      "code": "ADT1",
+      "description": "Appointment of auditor",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_22",
+      "category_id": "cat_04",
+      "name": "DIR-3 KYC",
+      "code": "DIR3KYC",
+      "description": "Director KYC annual filing",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_23",
+      "category_id": "cat_04",
+      "name": "DPT-3",
+      "code": "DPT3",
+      "description": "Return of deposits",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_24",
+      "category_id": "cat_04",
+      "name": "MSME-1",
+      "code": "MSME1",
+      "description": "MSME outstanding payment report",
+      "authority": "MCA",
+      "frequency": "half_yearly",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_25",
+      "category_id": "cat_05",
+      "name": "PF Monthly Return",
+      "code": "PF_MON",
+      "description": "Monthly PF return filing",
+      "authority": "EPFO",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_26",
+      "category_id": "cat_05",
+      "name": "PF Payment",
+      "code": "PF_PAY",
+      "description": "Monthly PF contribution payment",
+      "authority": "EPFO",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_27",
+      "category_id": "cat_05",
+      "name": "PF Annual Return",
+      "code": "PF_ANN",
+      "description": "Annual PF return",
+      "authority": "EPFO",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 25,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_28",
+      "category_id": "cat_06",
+      "name": "ESI Monthly Return",
+      "code": "ESI_MON",
+      "description": "Monthly ESI contribution filing",
+      "authority": "ESIC",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_29",
+      "category_id": "cat_06",
+      "name": "ESI Payment",
+      "code": "ESI_PAY",
+      "description": "Monthly ESI payment",
+      "authority": "ESIC",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_30",
+      "category_id": "cat_06",
+      "name": "ESI Half-Yearly Return",
+      "code": "ESI_HY",
+      "description": "Half-yearly ESI return",
+      "authority": "ESIC",
+      "frequency": "half_yearly",
+      "due_date_rule": null,
+      "due_day": 12,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_31",
+      "category_id": "cat_07",
+      "name": "PT Monthly Payment",
+      "code": "PT_MON",
+      "description": "Monthly professional tax payment",
+      "authority": "State Govt",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 15,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_32",
+      "category_id": "cat_07",
+      "name": "PT Annual Return",
+      "code": "PT_ANN",
+      "description": "Annual professional tax return",
+      "authority": "State Govt",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_33",
+      "category_id": "cat_09",
+      "name": "Payroll Processing",
+      "code": "PAYROLL_PROC",
+      "description": "Monthly payroll processing and disbursement",
+      "authority": "Internal",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 28,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_34",
+      "category_id": "cat_09",
+      "name": "Payroll MIS",
+      "code": "PAYROLL_MIS",
+      "description": "Monthly payroll MIS report",
+      "authority": "Internal",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 5,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_03",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_35",
+      "category_id": "cat_13",
+      "name": "Board Meeting",
+      "code": "BOARD_MTG",
+      "description": "Quarterly board meeting",
+      "authority": "MCA",
+      "frequency": "quarterly",
+      "due_date_rule": null,
+      "due_day": 0,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_36",
+      "category_id": "cat_13",
+      "name": "AGM",
+      "code": "AGM",
+      "description": "Annual General Meeting",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_37",
+      "category_id": "cat_11",
+      "name": "Statutory Registers Update",
+      "code": "STAT_REG",
+      "description": "Update statutory registers",
+      "authority": "MCA",
+      "frequency": "quarterly",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_38",
+      "category_id": "cat_11",
+      "name": "Minutes Filing",
+      "code": "MIN_FILE",
+      "description": "Board meeting minutes filing",
+      "authority": "MCA",
+      "frequency": "quarterly",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_05",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_39",
+      "category_id": "cat_08",
+      "name": "Shop & Establishment Renewal",
+      "code": "SHOP_RENEW",
+      "description": "Annual renewal of shop license",
+      "authority": "State Govt",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_04",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_40",
+      "category_id": "cat_08",
+      "name": "Contract Labour Return",
+      "code": "CONTRACT_LAB",
+      "description": "Annual contract labour returns",
+      "authority": "State Govt",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "low",
+      "default_department_id": "dept_04",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_41",
+      "category_id": "cat_10",
+      "name": "Monthly Book Closing",
+      "code": "BOOK_CLOSE",
+      "description": "Monthly finalization of accounts",
+      "authority": "Internal",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 10,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_06",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_42",
+      "category_id": "cat_10",
+      "name": "Bank Reconciliation",
+      "code": "BANK_RECON",
+      "description": "Monthly bank reconciliation",
+      "authority": "Internal",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 10,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_06",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_43",
+      "category_id": "cat_14",
+      "name": "Trade License Renewal",
+      "code": "TRADE_LIC",
+      "description": "Annual trade license renewal",
+      "authority": "Municipal Corp",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_04",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_44",
+      "category_id": "cat_14",
+      "name": "FSSAI Renewal",
+      "code": "FSSAI",
+      "description": "Food license renewal",
+      "authority": "FSSAI",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_04",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_45",
+      "category_id": "cat_15",
+      "name": "Monthly MIS Report",
+      "code": "MONTHLY_MIS",
+      "description": "Monthly management information system",
+      "authority": "Internal",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 7,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_01",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_46",
+      "category_id": "cat_15",
+      "name": "Cash Flow Statement",
+      "code": "CASH_FLOW",
+      "description": "Monthly cash flow statement",
+      "authority": "Internal",
+      "frequency": "monthly",
+      "due_date_rule": null,
+      "due_day": 10,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_01",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_47",
+      "category_id": "cat_12",
+      "name": "Annual Financial Statements",
+      "code": "ANN_FIN",
+      "description": "Preparation of annual financial statements",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_06",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_48",
+      "category_id": "cat_12",
+      "name": "Statutory Audit",
+      "code": "STAT_AUDIT",
+      "description": "Annual statutory audit",
+      "authority": "MCA",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "high",
+      "default_department_id": "dept_06",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_49",
+      "category_id": "cat_16",
+      "name": "LUT Filing",
+      "code": "LUT",
+      "description": "Letter of Undertaking for exports",
+      "authority": "CBIC",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 31,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "medium",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "comp_50",
+      "category_id": "cat_16",
+      "name": "Equalisation Levy",
+      "code": "EQ_LEVY",
+      "description": "Equalisation levy return",
+      "authority": "Income Tax Dept",
+      "frequency": "annual",
+      "due_date_rule": null,
+      "due_day": 30,
+      "grace_period_days": 0,
+      "penalty_info": null,
+      "priority": "low",
+      "default_department_id": "dept_02",
+      "default_assignee_id": null,
+      "reviewer_id": null,
+      "required_documents": null,
+      "mis_template": null,
+      "regulatory_reference": null,
+      "notes": null,
+      "status": "active",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 18:30:42"
+    }
+  ],
+  "users": [
+    {
+      "id": "user_01",
+      "organization_id": "org_001",
+      "name": "Dhyan",
+      "email": "admin@complianceos.com",
+      "password_hash": "$2b$10$wHctoJ7AOT837ll7XIMOOOIORNQKKkH3c7Jif2nw0W9rAaw/tGZSa",
+      "phone": "8310238560",
+      "employee_id": null,
+      "department_id": "dept_08",
+      "designation": "Super Admin",
+      "role_id": "role_01",
+      "avatar_url": null,
+      "status": "active",
+      "last_login": "2026-09-12 20:13:08",
+      "created_at": "2026-09-12 18:30:42",
+      "updated_at": "2026-09-12 19:35:15"
+    }
+  ],
+  "system_settings": [
+    {
+      "key": "org_name",
+      "value": "Enterprise Compliance Group",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "key": "financial_year_start",
+      "value": "4",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "key": "date_format",
+      "value": "DD MMM YYYY",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "key": "timezone",
+      "value": "Asia/Kolkata",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "key": "email_enabled",
+      "value": "false",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "key": "smtp_host",
+      "value": "",
+      "updated_at": "2026-09-12 18:30:42"
+    },
+    {
+      "key": "smtp_port",
+      "value": "587",
+      "updated_at": "2026-09-12 18:30:42"
+    }
+  ],
+  "reminder_rules": [
+    {
+      "id": "64956549a43218333b1660695abc0bb0",
+      "compliance_id": null,
+      "days_before": 30,
+      "channel": "both",
+      "is_active": 1,
+      "enabled": 1,
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "2ace99f7a814fb06aaa730854a577a70",
+      "compliance_id": null,
+      "days_before": 15,
+      "channel": "both",
+      "is_active": 1,
+      "enabled": 1,
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "d88824800f68458487dbf8a122e453b3",
+      "compliance_id": null,
+      "days_before": 7,
+      "channel": "both",
+      "is_active": 1,
+      "enabled": 1,
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "3371c22cfc9ba8a762e51d3020cda109",
+      "compliance_id": null,
+      "days_before": 3,
+      "channel": "both",
+      "is_active": 1,
+      "enabled": 1,
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "1bcb6392ade159a8ada307ef282a2599",
+      "compliance_id": null,
+      "days_before": 1,
+      "channel": "both",
+      "is_active": 1,
+      "enabled": 1,
+      "created_at": "2026-09-12 18:30:42"
+    },
+    {
+      "id": "2f085481ee7ada032f91e8bf2372aea7",
+      "compliance_id": null,
+      "days_before": 0,
+      "channel": "both",
+      "is_active": 1,
+      "enabled": 1,
+      "created_at": "2026-09-12 18:30:42"
+    }
+  ],
+  "mis_templates": [
+    {
+      "id": "79fa2a06d2f065795fc6e73447f3f8e6",
+      "compliance_id": "comp_01",
+      "field_name": "filing_period",
+      "field_label": "Filing Period",
+      "field_type": "text",
+      "is_required": 1,
+      "sort_order": 1,
+      "options": null
+    },
+    {
+      "id": "493c21b4b41d332aef287054310c7e7a",
+      "compliance_id": "comp_01",
+      "field_name": "filing_date",
+      "field_label": "Filing Date",
+      "field_type": "date",
+      "is_required": 1,
+      "sort_order": 2,
+      "options": null
+    },
+    {
+      "id": "2b635318ad98c1c8e9516e810747e44c",
+      "compliance_id": "comp_01",
+      "field_name": "arn_number",
+      "field_label": "ARN Number",
+      "field_type": "text",
+      "is_required": 0,
+      "sort_order": 3,
+      "options": null
+    },
+    {
+      "id": "db3a49e66e444d68a91b4d093ed80edc",
+      "compliance_id": "comp_01",
+      "field_name": "taxable_value",
+      "field_label": "Taxable Value",
+      "field_type": "number",
+      "is_required": 0,
+      "sort_order": 4,
+      "options": null
+    },
+    {
+      "id": "93dee3e176b694883fa45892947d2c98",
+      "compliance_id": "comp_01",
+      "field_name": "tax_amount",
+      "field_label": "Tax Amount",
+      "field_type": "number",
+      "is_required": 0,
+      "sort_order": 5,
+      "options": null
+    },
+    {
+      "id": "4e946dc510ccf166ad898895899bab75",
+      "compliance_id": "comp_02",
+      "field_name": "filing_period",
+      "field_label": "Filing Period",
+      "field_type": "text",
+      "is_required": 1,
+      "sort_order": 1,
+      "options": null
+    },
+    {
+      "id": "2f297bac3f96fda9a0cb87d958fe2f36",
+      "compliance_id": "comp_02",
+      "field_name": "filing_date",
+      "field_label": "Filing Date",
+      "field_type": "date",
+      "is_required": 1,
+      "sort_order": 2,
+      "options": null
+    },
+    {
+      "id": "a2999dc174e6c9b0dc21d3be53735c3b",
+      "compliance_id": "comp_02",
+      "field_name": "arn_number",
+      "field_label": "ARN Number",
+      "field_type": "text",
+      "is_required": 0,
+      "sort_order": 3,
+      "options": null
+    },
+    {
+      "id": "597169fc66aecc719ccdf93314f0c3b7",
+      "compliance_id": "comp_02",
+      "field_name": "igst",
+      "field_label": "IGST Amount",
+      "field_type": "number",
+      "is_required": 0,
+      "sort_order": 4,
+      "options": null
+    },
+    {
+      "id": "5d0bdf85c5fab99eb85e745b6542457e",
+      "compliance_id": "comp_02",
+      "field_name": "cgst",
+      "field_label": "CGST Amount",
+      "field_type": "number",
+      "is_required": 0,
+      "sort_order": 5,
+      "options": null
+    },
+    {
+      "id": "f9f1a7ed0d48f05613fcd87bc2cb1800",
+      "compliance_id": "comp_02",
+      "field_name": "sgst",
+      "field_label": "SGST Amount",
+      "field_type": "number",
+      "is_required": 0,
+      "sort_order": 6,
+      "options": null
+    },
+    {
+      "id": "b84f66eae845e2e79cb20cc8c1c718c2",
+      "compliance_id": "comp_02",
+      "field_name": "total_tax",
+      "field_label": "Total Tax Paid",
+      "field_type": "number",
+      "is_required": 1,
+      "sort_order": 7,
+      "options": null
+    },
+    {
+      "id": "8efc22f8e706bdb619a3a0be749b7b7d",
+      "compliance_id": "comp_02",
+      "field_name": "challan_number",
+      "field_label": "Challan Number",
+      "field_type": "text",
+      "is_required": 0,
+      "sort_order": 8,
+      "options": null
+    },
+    {
+      "id": "77ab4736ab9e6644af29578547adb05a",
+      "compliance_id": "comp_02",
+      "field_name": "payment_date",
+      "field_label": "Payment Date",
+      "field_type": "date",
+      "is_required": 0,
+      "sort_order": 9,
+      "options": null
+    },
+    {
+      "id": "b524a12fa70522078571205083de5b47",
+      "compliance_id": "comp_07",
+      "field_name": "quarter",
+      "field_label": "Quarter",
+      "field_type": "text",
+      "is_required": 1,
+      "sort_order": 1,
+      "options": null
+    },
+    {
+      "id": "cb4ac1eb4938f7e06e81a9b0f06cc709",
+      "compliance_id": "comp_07",
+      "field_name": "filing_date",
+      "field_label": "Filing Date",
+      "field_type": "date",
+      "is_required": 1,
+      "sort_order": 2,
+      "options": null
+    },
+    {
+      "id": "9ba505800b0acd683f6e1949562f4bbe",
+      "compliance_id": "comp_07",
+      "field_name": "token_number",
+      "field_label": "Token Number",
+      "field_type": "text",
+      "is_required": 0,
+      "sort_order": 3,
+      "options": null
+    },
+    {
+      "id": "7f7c11be7507ab1462cfd80ae794d75e",
+      "compliance_id": "comp_07",
+      "field_name": "total_tds",
+      "field_label": "Total TDS Amount",
+      "field_type": "number",
+      "is_required": 1,
+      "sort_order": 4,
+      "options": null
+    },
+    {
+      "id": "dfdb706b9463fba970aa584929c2888b",
+      "compliance_id": "comp_07",
+      "field_name": "challan_number",
+      "field_label": "Challan Number",
+      "field_type": "text",
+      "is_required": 0,
+      "sort_order": 5,
+      "options": null
+    },
+    {
+      "id": "104bc9803e95c84aa53bd77409948b08",
+      "compliance_id": "comp_12",
+      "field_name": "payment_date",
+      "field_label": "Payment Date",
+      "field_type": "date",
+      "is_required": 1,
+      "sort_order": 1,
+      "options": null
+    },
+    {
+      "id": "2a1b1abb8f844ba2bca90b21024fdf0f",
+      "compliance_id": "comp_12",
+      "field_name": "challan_number",
+      "field_label": "Challan Number",
+      "field_type": "text",
+      "is_required": 1,
+      "sort_order": 2,
+      "options": null
+    },
+    {
+      "id": "f82989fa3f6f9e3a37033b9b5cfa4613",
+      "compliance_id": "comp_12",
+      "field_name": "bsr_code",
+      "field_label": "BSR Code",
+      "field_type": "text",
+      "is_required": 0,
+      "sort_order": 3,
+      "options": null
+    },
+    {
+      "id": "5d4bd960b248294aff1332f0957f2d3e",
+      "compliance_id": "comp_12",
+      "field_name": "tds_amount",
+      "field_label": "TDS Amount",
+      "field_type": "number",
+      "is_required": 1,
+      "sort_order": 4,
+      "options": null
+    },
+    {
+      "id": "a829004cbbb94c0eb2b4f51867180989",
+      "compliance_id": "comp_25",
+      "field_name": "month",
+      "field_label": "Month",
+      "field_type": "text",
+      "is_required": 1,
+      "sort_order": 1,
+      "options": null
+    },
+    {
+      "id": "99c5994e8d31627bd2305a995e61cce2",
+      "compliance_id": "comp_25",
+      "field_name": "employee_contribution",
+      "field_label": "Employee Contribution",
+      "field_type": "number",
+      "is_required": 1,
+      "sort_order": 2,
+      "options": null
+    },
+    {
+      "id": "181037661cbabb0496f947b9b5c21261",
+      "compliance_id": "comp_25",
+      "field_name": "employer_contribution",
+      "field_label": "Employer Contribution",
+      "field_type": "number",
+      "is_required": 1,
+      "sort_order": 3,
+      "options": null
+    },
+    {
+      "id": "1f52c570f203b170729b7404e7456ccf",
+      "compliance_id": "comp_25",
+      "field_name": "total_amount",
+      "field_label": "Total Amount",
+      "field_type": "number",
+      "is_required": 1,
+      "sort_order": 4,
+      "options": null
+    },
+    {
+      "id": "387590e0eafb2ab846bb1b5441270f52",
+      "compliance_id": "comp_25",
+      "field_name": "challan_number",
+      "field_label": "TRRN Number",
+      "field_type": "text",
+      "is_required": 0,
+      "sort_order": 5,
+      "options": null
+    },
+    {
+      "id": "723c289020fc4f8e16ae4b7668ce09dd",
+      "compliance_id": "comp_25",
+      "field_name": "payment_date",
+      "field_label": "Payment Date",
+      "field_type": "date",
+      "is_required": 0,
+      "sort_order": 6,
+      "options": null
+    }
+  ]
+}

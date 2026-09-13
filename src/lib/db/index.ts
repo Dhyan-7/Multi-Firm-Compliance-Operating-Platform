@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import seedDump from './seed-data.json';
 
 // Try loading better-sqlite3 ONLY in non-serverless environments (local dev)
 let BetterSqlite3: any = null;
@@ -13,14 +14,21 @@ if (!process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.en
 
 let db: any = null;
 
-// In-memory fallback store for serverless environments where native better-sqlite3 cannot run
+// Comprehensive In-memory store for serverless environments (Netlify / AWS Lambda)
 function createInMemoryStore(dbPath: string) {
   const bcrypt = require('bcryptjs');
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const passwordHash = bcrypt.hashSync(adminPassword, 10);
 
+  const rawUsers = (seedDump.users || []).map((u: any) => ({
+    ...u,
+    password_hash: u.email.toLowerCase() === 'admin@complianceos.com' ? passwordHash : u.password_hash,
+    role_name: 'Super Admin',
+    department_name: 'Management'
+  }));
+
   const state: any = {
-    users: [
+    users: rawUsers.length > 0 ? rawUsers : [
       {
         id: 'user_01',
         organization_id: 'org_001',
@@ -37,15 +45,15 @@ function createInMemoryStore(dbPath: string) {
         updated_at: new Date().toISOString(),
       }
     ],
-    organizations: [
+    organizations: seedDump.organizations || [
       { id: 'org_001', name: 'Enterprise Compliance Group', status: 'active', financial_year_start: 4 }
     ],
-    roles: [
+    roles: seedDump.roles || [
       { id: 'role_01', name: 'Super Admin', description: 'Root authority with full unrestricted administrative control', is_system: 1 },
       { id: 'role_02', name: 'Admin', description: 'System Administrator', is_system: 1 },
       { id: 'role_03', name: 'User', description: 'Standard Staff', is_system: 1 },
     ],
-    departments: [
+    departments: seedDump.departments || [
       { id: 'dept_01', organization_id: 'org_001', name: 'Finance' },
       { id: 'dept_02', organization_id: 'org_001', name: 'Taxation' },
       { id: 'dept_03', organization_id: 'org_001', name: 'HR' },
@@ -55,16 +63,12 @@ function createInMemoryStore(dbPath: string) {
       { id: 'dept_07', organization_id: 'org_001', name: 'Operations' },
       { id: 'dept_08', organization_id: 'org_001', name: 'Management' },
     ],
+    permissions: seedDump.permissions || [],
+    role_permissions: seedDump.role_permissions || [],
+    compliance_categories: seedDump.compliance_categories || [],
+    compliances: seedDump.compliances || [],
+    entity_types: seedDump.entity_types || [],
     firms: [],
-    compliances: [],
-    compliance_categories: [
-      { id: 'cat_01', name: 'GST', code: 'GST', description: 'Goods and Services Tax', color: '#10B981', icon: '🧾', sort_order: 1, status: 'active' },
-      { id: 'cat_02', name: 'Income Tax', code: 'IT', description: 'Income Tax compliances', color: '#3B82F6', icon: '💰', sort_order: 2, status: 'active' },
-      { id: 'cat_03', name: 'TDS', code: 'TDS', description: 'Tax Deducted at Source', color: '#8B5CF6', icon: '📊', sort_order: 3, status: 'active' },
-      { id: 'cat_04', name: 'ROC / MCA', code: 'MCA', description: 'Ministry of Corporate Affairs filings', color: '#F59E0B', icon: '🏛️', sort_order: 4, status: 'active' },
-      { id: 'cat_05', name: 'PF', code: 'PF', description: 'Provident Fund', color: '#EF4444', icon: '👥', sort_order: 5, status: 'active' },
-      { id: 'cat_06', name: 'ESI', code: 'ESI', description: 'Employee State Insurance', color: '#EC4899', icon: '🏥', sort_order: 6, status: 'active' },
-    ],
     compliance_tasks: [],
     audit_logs: [
       {
@@ -80,12 +84,15 @@ function createInMemoryStore(dbPath: string) {
         created_at: new Date().toISOString()
       }
     ],
-    system_settings: {
+    system_settings: (seedDump.system_settings || []).reduce((acc: any, s: any) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {
       org_name: 'Enterprise Compliance Group',
       financial_year_start: '4',
       date_format: 'DD MMM YYYY',
       timezone: 'Asia/Kolkata',
-    },
+    }),
     notifications: []
   };
 
@@ -94,7 +101,14 @@ function createInMemoryStore(dbPath: string) {
   try {
     if (fs.existsSync(jsonPath)) {
       const saved = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-      Object.assign(state, saved);
+      if (saved && typeof saved === 'object') {
+        if (saved.users) state.users = saved.users;
+        if (saved.firms) state.firms = saved.firms;
+        if (saved.compliances && saved.compliances.length >= state.compliances.length) state.compliances = saved.compliances;
+        if (saved.compliance_tasks) state.compliance_tasks = saved.compliance_tasks;
+        if (saved.role_permissions) state.role_permissions = saved.role_permissions;
+        if (saved.audit_logs) state.audit_logs = saved.audit_logs;
+      }
     }
   } catch {}
 
@@ -116,10 +130,12 @@ function createInMemoryStore(dbPath: string) {
               const target = String(params[0]).toLowerCase().trim();
               const found = state.users.find((u: any) => u.email.toLowerCase() === target || u.id === target);
               if (found) {
+                const role = state.roles.find((r: any) => r.id === found.role_id);
+                const dept = state.departments.find((d: any) => d.id === found.department_id);
                 return {
                   ...found,
-                  role_name: found.role_name || 'Super Admin',
-                  department_name: found.department_name || 'Management'
+                  role_name: role ? role.name : (found.role_name || 'Super Admin'),
+                  department_name: dept ? dept.name : (found.department_name || 'Management')
                 };
               }
             }
@@ -130,10 +146,47 @@ function createInMemoryStore(dbPath: string) {
             return state.organizations[0];
           }
 
+          if (lower.includes('from roles')) {
+            if (params.length > 0) {
+              const target = String(params[0]).toLowerCase().trim();
+              const found = state.roles.find((r: any) => r.id === target || r.name.toLowerCase() === target);
+              if (found) return found;
+            }
+            return state.roles[0];
+          }
+
+          if (lower.includes('from compliance_categories')) {
+            if (params.length > 0) {
+              const target = String(params[0]).toLowerCase().trim();
+              return state.compliance_categories.find((c: any) => c.id === target || c.code.toLowerCase() === target);
+            }
+            return state.compliance_categories[0];
+          }
+
+          if (lower.includes('from compliances')) {
+            if (params.length > 0) {
+              const target = String(params[0]).toLowerCase().trim();
+              return state.compliances.find((c: any) => c.id === target || (c.code && c.code.toLowerCase() === target));
+            }
+            return state.compliances[0];
+          }
+
+          if (lower.includes('from firms')) {
+            if (params.length > 0) {
+              const target = String(params[0]);
+              const found = state.firms.find((f: any) => f.id === target);
+              if (found) {
+                const et = state.entity_types.find((e: any) => e.id === found.entity_type_id);
+                return { ...found, entity_type_name: et ? et.name : 'Company' };
+              }
+            }
+            return state.firms[0];
+          }
+
           if (lower.includes('select count(*)')) {
             if (lower.includes('from compliance_tasks')) return { total: state.compliance_tasks.length, count: state.compliance_tasks.length, overdue: 0, pending: 0, completed: 0 };
             if (lower.includes('from firms')) return { count: state.firms.length, total: state.firms.length };
-            if (lower.includes('from organizations')) return { count: state.organizations.length };
+            if (lower.includes('from organizations')) return { count: state.organizations.length, total: state.organizations.length };
             return { count: 0, total: 0 };
           }
 
@@ -148,13 +201,97 @@ function createInMemoryStore(dbPath: string) {
         all(...rawParams: any[]) {
           const params = (rawParams.length === 1 && Array.isArray(rawParams[0])) ? rawParams[0] : rawParams;
           
-          if (lower.includes('from users')) return state.users;
-          if (lower.includes('from firms')) return state.firms;
-          if (lower.includes('from compliance_categories')) return state.compliance_categories;
-          if (lower.includes('from compliances')) return state.compliances;
-          if (lower.includes('from compliance_tasks')) return state.compliance_tasks;
-          if (lower.includes('from departments')) return state.departments;
-          if (lower.includes('from roles')) return state.roles;
+          if (lower.includes('from compliances')) {
+            return state.compliances.map((c: any) => {
+              const cat = state.compliance_categories.find((cc: any) => cc.id === c.category_id);
+              const dept = state.departments.find((d: any) => d.id === c.default_department_id);
+              return {
+                ...c,
+                category_name: cat ? cat.name : 'General',
+                category_color: cat ? cat.color : '#3B82F6',
+                category_icon: cat ? cat.icon : '📋',
+                department_name: dept ? dept.name : 'Operations'
+              };
+            });
+          }
+
+          if (lower.includes('from permissions')) {
+            return [...state.permissions].sort((a: any, b: any) => {
+              if (a.module === b.module) return a.action.localeCompare(b.action);
+              return a.module.localeCompare(b.module);
+            });
+          }
+
+          if (lower.includes('from role_permissions')) {
+            if (params.length > 0) {
+              const roleId = params[0];
+              return state.role_permissions
+                .filter((rp: any) => rp.role_id === roleId)
+                .map((rp: any) => ({ permission_id: rp.permission_id }));
+            }
+            return state.role_permissions;
+          }
+
+          if (lower.includes('from compliance_categories')) {
+            return state.compliance_categories.map((cc: any) => {
+              const count = state.compliances.filter((c: any) => c.category_id === cc.id).length;
+              return { ...cc, compliance_count: count };
+            });
+          }
+
+          if (lower.includes('from roles')) {
+            return state.roles.map((r: any) => {
+              const count = state.users.filter((u: any) => u.role_id === r.id).length;
+              return { ...r, user_count: count };
+            });
+          }
+
+          if (lower.includes('from departments')) {
+            return state.departments.map((d: any) => {
+              const count = state.users.filter((u: any) => u.department_id === d.id).length;
+              return { ...d, member_count: count };
+            });
+          }
+
+          if (lower.includes('from users')) {
+            return state.users.map((u: any) => {
+              const role = state.roles.find((r: any) => r.id === u.role_id);
+              const dept = state.departments.find((d: any) => d.id === u.department_id);
+              return {
+                ...u,
+                role_name: role ? role.name : (u.role_name || 'User'),
+                department_name: dept ? dept.name : (u.department_name || 'Operations')
+              };
+            });
+          }
+
+          if (lower.includes('from firms')) {
+            return state.firms.map((f: any) => {
+              const et = state.entity_types.find((e: any) => e.id === f.entity_type_id);
+              return { ...f, entity_type_name: et ? et.name : 'Company' };
+            });
+          }
+
+          if (lower.includes('from compliance_tasks')) {
+            return state.compliance_tasks.map((t: any) => {
+              const firm = state.firms.find((f: any) => f.id === t.firm_id);
+              const comp = state.compliances.find((c: any) => c.id === t.compliance_id);
+              const cat = comp ? state.compliance_categories.find((cc: any) => cc.id === comp.category_id) : null;
+              const user = state.users.find((u: any) => u.id === t.assignee_id);
+              return {
+                ...t,
+                firm_name: firm?.display_name || firm?.legal_name || 'Firm',
+                compliance_name: comp?.name || 'Compliance',
+                compliance_code: comp?.code || '',
+                category_name: cat?.name || 'General',
+                category_color: cat?.color || '#3B82F6',
+                category_icon: cat?.icon || '📋',
+                assignee_name: user?.name || 'Assigned'
+              };
+            });
+          }
+
+          if (lower.includes('from entity_types')) return state.entity_types;
           if (lower.includes('from audit_logs')) return state.audit_logs;
           if (lower.includes('from notifications')) return state.notifications;
           return [];
@@ -163,7 +300,14 @@ function createInMemoryStore(dbPath: string) {
         run(...rawParams: any[]) {
           const params = (rawParams.length === 1 && Array.isArray(rawParams[0])) ? rawParams[0] : rawParams;
           
-          if (lower.startsWith('update users')) {
+          if (lower.includes('delete from role_permissions where role_id = ?')) {
+            const roleId = params[0];
+            state.role_permissions = state.role_permissions.filter((rp: any) => rp.role_id !== roleId);
+            persist();
+          } else if (lower.includes('insert into role_permissions')) {
+            state.role_permissions.push({ role_id: params[0], permission_id: params[1] });
+            persist();
+          } else if (lower.startsWith('update users')) {
             if (state.users.length > 0) {
               state.users[0].last_login = new Date().toISOString();
               persist();
@@ -174,7 +318,54 @@ function createInMemoryStore(dbPath: string) {
               created_at: new Date().toISOString()
             });
             persist();
+          } else if (lower.startsWith('insert into compliances')) {
+            state.compliances.push({
+              id: params[0],
+              category_id: params[1],
+              name: params[2],
+              code: params[3],
+              description: params[4],
+              authority: params[5],
+              frequency: params[6],
+              due_day: params[7],
+              grace_period_days: params[8],
+              priority: params[9],
+              default_department_id: params[10],
+              regulatory_reference: params[11],
+              notes: params[12],
+              status: params[13] || 'active'
+            });
+            persist();
           } else if (lower.startsWith('insert into firms')) {
+            state.firms.push({
+              id: params[0] || `firm_${Date.now()}`,
+              organization_id: params[1] || 'org_001',
+              legal_name: params[2],
+              display_name: params[3] || params[2],
+              entity_type_id: params[4],
+              status: 'active'
+            });
+            persist();
+          } else if (lower.startsWith('insert into roles')) {
+            state.roles.push({
+              id: params[0],
+              name: params[1],
+              description: params[2],
+              is_system: 0
+            });
+            persist();
+          } else if (lower.startsWith('insert into users')) {
+            state.users.push({
+              id: params[0] || `user_${Date.now()}`,
+              organization_id: params[1] || 'org_001',
+              name: params[2],
+              email: params[3],
+              password_hash: params[4],
+              department_id: params[5],
+              designation: params[6],
+              role_id: params[7],
+              status: 'active'
+            });
             persist();
           } else if (lower.startsWith('insert into compliance_tasks')) {
             persist();
