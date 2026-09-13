@@ -1,7 +1,13 @@
 [build]
   command = "npm run build"
-  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
+
+[functions]
+  included_files = ["data/**"]
+  external_node_modules = ["better-sqlite3", "bcryptjs"]

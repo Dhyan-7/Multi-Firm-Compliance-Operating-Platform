@@ -26,6 +26,13 @@ export function getDb(): Database.Database {
       if (!fs.existsSync(tmpDir)) {
         fs.mkdirSync(tmpDir, { recursive: true });
       }
+      if (fs.existsSync(defaultPath) && !fs.existsSync(/*turbopackIgnore: true*/ dbPath)) {
+        try {
+          fs.copyFileSync(defaultPath, dbPath);
+        } catch (copyErr) {
+          console.warn('Could not copy bundled db to /tmp:', copyErr);
+        }
+      }
     }
   } else {
     const customDir = path.dirname(dbPath);
@@ -56,9 +63,28 @@ export function getDb(): Database.Database {
   return db;
 }
 
+function ensureAdminUser(db: Database.Database) {
+  try {
+    const adminUser = db.prepare("SELECT id FROM users WHERE LOWER(email) = 'admin@complianceos.com'").get();
+    if (!adminUser) {
+      const bcrypt = require('bcryptjs');
+      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      const passwordHash = bcrypt.hashSync(adminPassword, 10);
+      db.prepare("INSERT INTO users (id, organization_id, name, email, password_hash, department_id, designation, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
+        'user_01', 'org_001', 'Dhyan', 'admin@complianceos.com', passwordHash, 'dept_08', 'Super Admin', 'role_01'
+      );
+    }
+  } catch (e) {
+    console.warn('ensureAdminUser check skipped:', e);
+  }
+}
+
 function initializeSchema(db: Database.Database) {
   const initialized = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='organizations'").get();
-  if (initialized) return;
+  if (initialized) {
+    ensureAdminUser(db);
+    return;
+  }
   
   db.exec(`
     CREATE TABLE IF NOT EXISTS organizations (

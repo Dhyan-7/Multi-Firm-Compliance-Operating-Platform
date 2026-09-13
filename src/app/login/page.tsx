@@ -27,10 +27,10 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok && data.token) {
         localStorage.setItem('compliance_token', data.token);
         router.push('/dashboard');
@@ -38,10 +38,10 @@ export default function LoginPage() {
         if (res.status === 429) {
           setIsLocked(true);
         }
-        setError(data.error || 'Invalid credentials. Please verify your email and password.');
+        setError(data.error || data.message || `Authentication failed (HTTP ${res.status}). Please verify your credentials.`);
       }
     } catch {
-      setError('An error occurred during login. Please try again.');
+      setError('An error occurred during login. Please check connection and try again.');
     } finally {
       setLoading(false);
     }
