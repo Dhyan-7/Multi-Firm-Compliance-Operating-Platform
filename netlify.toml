@@ -9,5 +9,4 @@
   NPM_FLAGS = "--legacy-peer-deps"
 
 [functions]
-  included_files = ["data/**"]
-  external_node_modules = ["better-sqlite3", "bcryptjs"]
+  included_files = ["data/**", "node_modules/sql.js/dist/sql-wasm.wasm"]

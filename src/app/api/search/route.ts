@@ -11,8 +11,13 @@ export async function GET(request: Request) {
     const q = searchParams.get('q') || '';
     if (q.length < 2) return NextResponse.json({ results: [] });
 
-    // Search across entities using FTS5
-    const ftsResults = db.prepare("SELECT entity_type, entity_id, title, subtitle, content, firm_name FROM search_index WHERE search_index MATCH ? LIMIT 20").all(q + '*');
+    // Search across entities using FTS5 or LIKE fallback
+    let ftsResults: any[] = [];
+    try {
+      ftsResults = db.prepare("SELECT entity_type, entity_id, title, subtitle, content, firm_name FROM search_index WHERE search_index MATCH ? LIMIT 20").all(q + '*');
+    } catch {
+      ftsResults = db.prepare("SELECT entity_type, entity_id, title, subtitle, content, firm_name FROM search_index WHERE title LIKE ? OR subtitle LIKE ? OR content LIKE ? LIMIT 20").all(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
 
     // Also search tasks
     const taskResults = db.prepare(`
