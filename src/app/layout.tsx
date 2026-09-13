@@ -5,6 +5,11 @@ import AppLayout from "@/components/layout/AppLayout";
 export const metadata: Metadata = {
   title: "ComplianceOS — Multi-Firm Compliance Operating Platform",
   description: "Enterprise-grade compliance management system for organizations managing multiple companies and firms.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
