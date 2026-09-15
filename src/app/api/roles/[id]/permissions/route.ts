@@ -79,3 +79,5 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = PUT;
