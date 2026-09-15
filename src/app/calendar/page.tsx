@@ -15,23 +15,34 @@ export default function CalendarPage() {
 
   // Filters
   const [firmFilter, setFirmFilter] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [firmsList, setFirmsList] = useState<any[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<any[]>([]);
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
+
+  // Selected Task Action Menu (Popup)
+  const [selectedTaskMenu, setSelectedTaskMenu] = useState<any | null>(null);
 
   // Reschedule Modal
   const [rescheduleTask, setRescheduleTask] = useState<any | null>(null);
   const [newDate, setNewDate] = useState('');
-  const [rescheduleReason, setRescheduleReason] = useState('Statutory deadline extension / operational review');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [rescheduleError, setRescheduleError] = useState('');
   const [savingReschedule, setSavingReschedule] = useState(false);
 
-  // Fetch Firms and Categories for filter dropdowns
+  // Fetch Filters Options
   useEffect(() => {
     if (!token) return;
     fetch('/api/firms', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setFirmsList(data.firms || []))
+      .catch(console.error);
+
+    fetch('/api/departments', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => setDepartmentsList(data.departments || []))
       .catch(console.error);
 
     fetch('/api/compliance-categories', { headers: { Authorization: `Bearer ${token}` } })
@@ -48,6 +59,7 @@ export default function CalendarPage() {
         year: year.toString(),
         month: month.toString(),
         firm_id: firmFilter,
+        department_id: departmentFilter,
         status: statusFilter,
         category_id: categoryFilter,
       });
@@ -70,7 +82,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchCalendarTasks();
-  }, [token, year, month, firmFilter, statusFilter, categoryFilter]);
+  }, [token, year, month, firmFilter, departmentFilter, statusFilter, categoryFilter]);
 
   const handlePrevMonth = () => {
     if (month === 1) {
@@ -99,9 +111,42 @@ export default function CalendarPage() {
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstDayIndex = new Date(year, month - 1, 1).getDay(); // 0 = Sun, 1 = Mon ...
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return { bg: '#ECFDF5', text: '#065F46', border: '#A7F3D0', icon: '✓', label: 'Completed' };
+      case 'in_progress':
+        return { bg: '#EFF6FF', text: '#1E40AF', border: '#BFDBFE', icon: '⏳', label: 'In Progress' };
+      case 'submitted':
+      case 'in_review':
+        return { bg: '#F5F3FF', text: '#5B21B6', border: '#DDD6FE', icon: '📤', label: 'Submitted' };
+      case 'overdue':
+      case 'missed':
+      case 'critical':
+        return { bg: '#FEF2F2', text: '#991B1B', border: '#FECACA', icon: '⚠️', label: 'Overdue' };
+      case 'pending':
+      case 'not_started':
+      default:
+        return { bg: '#FFFBEB', text: '#92400E', border: '#FDE68A', icon: '●', label: 'Pending' };
+    }
+  };
+
+  const openReschedule = (task: any) => {
+    setSelectedTaskMenu(null);
+    setRescheduleTask(task);
+    setNewDate(task.due_date || '');
+    setRescheduleReason(task.reschedule_reason || '');
+    setRescheduleError('');
+  };
+
   const handleSaveReschedule = async () => {
     if (!token || !rescheduleTask || !newDate) return;
+    if (!rescheduleReason.trim()) {
+      setRescheduleError('Reason for rescheduling is required');
+      return;
+    }
     setSavingReschedule(true);
+    setRescheduleError('');
     try {
       const res = await fetch('/api/calendar', {
         method: 'PUT',
@@ -112,16 +157,19 @@ export default function CalendarPage() {
         body: JSON.stringify({
           task_id: rescheduleTask.id,
           new_date: newDate,
-          reason: rescheduleReason,
+          reason: rescheduleReason.trim(),
         }),
       });
 
-      if (res.ok) {
+      const data = await res.json();
+      if (!res.ok) {
+        setRescheduleError(data.error || 'Failed to reschedule task');
+      } else {
         setRescheduleTask(null);
         fetchCalendarTasks();
       }
-    } catch (err) {
-      console.error('Save reschedule error:', err);
+    } catch (err: any) {
+      setRescheduleError(err.message || 'Network error occurred');
     } finally {
       setSavingReschedule(false);
     }
@@ -149,7 +197,7 @@ export default function CalendarPage() {
           <button
             onClick={handlePrevMonth}
             style={{
-              padding: '8px 12px',
+              padding: '8px 14px',
               borderRadius: 8,
               border: '1px solid #CBD5E1',
               background: '#F8FAFC',
@@ -165,7 +213,7 @@ export default function CalendarPage() {
           <button
             onClick={handleNextMonth}
             style={{
-              padding: '8px 12px',
+              padding: '8px 14px',
               borderRadius: 8,
               border: '1px solid #CBD5E1',
               background: '#F8FAFC',
@@ -179,6 +227,7 @@ export default function CalendarPage() {
 
         {/* Filters */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Firm Filter */}
           <select
             value={firmFilter}
             onChange={(e) => setFirmFilter(e.target.value)}
@@ -186,23 +235,37 @@ export default function CalendarPage() {
           >
             <option value="all">All Firms</option>
             {firmsList.map(f => (
-              <option key={f.id} value={f.id}>{f.display_name}</option>
+              <option key={f.id} value={f.id}>{f.display_name || f.legal_name}</option>
             ))}
           </select>
 
+          {/* Department Filter (Section 1.2) */}
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          >
+            <option value="all">All Departments</option>
+            {departmentsList.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+
+          {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
           >
             <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="completed">Completed</option>
+            <option value="not_started">Pending / Not Started</option>
             <option value="in_progress">In Progress</option>
+            <option value="submitted">Submitted / In Review</option>
+            <option value="completed">Completed</option>
             <option value="overdue">Overdue</option>
-            <option value="missed">Missed</option>
           </select>
 
+          {/* Category Filter */}
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -304,54 +367,35 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  {/* Day Tasks List */}
+                  {/* Day Tasks List with Status Colors (Section 1.1) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto' }}>
-                    {dayTasks.map(t => (
-                      <div
-                        key={t.id}
-                        onClick={() => {
-                          setRescheduleTask(t);
-                          setNewDate(t.due_date);
-                        }}
-                        title={`Click to reschedule or inspect: ${t.compliance_name} (${t.firm_name})`}
-                        style={{
-                          padding: '4px 6px',
-                          borderRadius: 6,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          background:
-                            t.status === 'completed'
-                              ? '#ECFDF5'
-                              : t.status === 'overdue'
-                              ? '#FEF2F2'
-                              : t.status === 'in_progress'
-                              ? '#EFF6FF'
-                              : '#FFFBEB',
-                          color:
-                            t.status === 'completed'
-                              ? '#065F46'
-                              : t.status === 'overdue'
-                              ? '#991B1B'
-                              : t.status === 'in_progress'
-                              ? '#1E40AF'
-                              : '#92400E',
-                          border: `1px solid ${
-                            t.status === 'completed'
-                              ? '#A7F3D0'
-                              : t.status === 'overdue'
-                              ? '#FECACA'
-                              : '#FDE68A'
-                          }`,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {t.status === 'completed' ? '✓ ' : t.status === 'overdue' ? '⚠️ ' : '● '}
-                        {t.compliance_name}
-                      </div>
-                    ))}
+                    {dayTasks.map(t => {
+                      const st = getStatusColor(t.status);
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() => setSelectedTaskMenu(t)}
+                          title={`${t.compliance_name} (${t.firm_name}) - ${st.label}`}
+                          style={{
+                            padding: '4px 6px',
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: st.bg,
+                            color: st.text,
+                            border: `1px solid ${st.border}`,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ marginRight: 4 }}>{st.icon}</span>
+                          {t.compliance_name}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -367,74 +411,206 @@ export default function CalendarPage() {
                 <th style={{ padding: '10px 12px' }}>Due Date</th>
                 <th style={{ padding: '10px 12px' }}>Organization</th>
                 <th style={{ padding: '10px 12px' }}>Statutory Compliance</th>
-                <th style={{ padding: '10px 12px' }}>Period</th>
+                <th style={{ padding: '10px 12px' }}>Department</th>
                 <th style={{ padding: '10px 12px' }}>Assignee</th>
                 <th style={{ padding: '10px 12px' }}>Status</th>
                 <th style={{ padding: '10px 12px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {tasksList.map(t => (
-                <tr key={t.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                  <td style={{ padding: '12px', fontWeight: 700, color: '#0F172A' }}>{t.due_date}</td>
-                  <td style={{ padding: '12px', fontWeight: 600 }}>{t.firm_name}</td>
-                  <td style={{ padding: '12px' }}>{t.compliance_name}</td>
-                  <td style={{ padding: '12px', color: '#64748B' }}>{t.period}</td>
-                  <td style={{ padding: '12px', color: '#64748B' }}>{t.assignee_name || 'Unassigned'}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        background: t.status === 'completed' ? '#D1FAE5' : t.status === 'overdue' ? '#FEE2E2' : '#FEF3C7',
-                        color: t.status === 'completed' ? '#065F46' : t.status === 'overdue' ? '#991B1B' : '#92400E',
-                      }}
-                    >
-                      {t.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px', display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => {
-                        setRescheduleTask(t);
-                        setNewDate(t.due_date);
-                      }}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: 6,
-                        border: '1px solid #CBD5E1',
-                        background: '#F8FAFC',
-                        fontSize: 12,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Reschedule
-                    </button>
-                    <a
-                      href={`/tasks/${t.id}`}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: 6,
-                        background: '#EFF6FF',
-                        color: '#2563EB',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Workspace →
-                    </a>
-                  </td>
-                </tr>
-              ))}
+              {tasksList.map(t => {
+                const st = getStatusColor(t.status);
+                return (
+                  <tr key={t.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '12px', fontWeight: 700, color: '#0F172A' }}>
+                      {t.due_date}
+                      {t.original_due_date && t.original_due_date !== t.due_date && (
+                        <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 400 }}>
+                          orig: {t.original_due_date}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px', fontWeight: 600 }}>{t.firm_name}</td>
+                    <td style={{ padding: '12px' }}>
+                      <div>{t.compliance_name}</div>
+                      {t.period && <div style={{ fontSize: 11, color: '#64748B' }}>{t.period}</div>}
+                    </td>
+                    <td style={{ padding: '12px', color: '#64748B' }}>{t.department_name || '—'}</td>
+                    <td style={{ padding: '12px', color: '#64748B' }}>{t.assignee_name || 'Unassigned'}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '3px 8px',
+                          borderRadius: 12,
+                          background: st.bg,
+                          color: st.text,
+                          border: `1px solid ${st.border}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        {st.icon} {st.label}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => openReschedule(t)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          border: '1px solid #CBD5E1',
+                          background: '#F8FAFC',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Reschedule
+                      </button>
+                      <a
+                        href={`/tasks/${t.id}`}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          background: '#EFF6FF',
+                          color: '#2563EB',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        Task Detail →
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Reschedule Modal */}
+      {/* Section 1.3: Calendar Action Menu on Click */}
+      {selectedTaskMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setSelectedTaskMenu(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              background: '#FFFFFF',
+              borderRadius: 14,
+              padding: 24,
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+              border: '1px solid #E2E8F0',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 10,
+                    background: getStatusColor(selectedTaskMenu.status).bg,
+                    color: getStatusColor(selectedTaskMenu.status).text,
+                    border: `1px solid ${getStatusColor(selectedTaskMenu.status).border}`,
+                  }}
+                >
+                  {getStatusColor(selectedTaskMenu.status).label}
+                </span>
+                <h3 style={{ margin: '8px 0 2px', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>
+                  {selectedTaskMenu.compliance_name}
+                </h3>
+                <div style={{ fontSize: 13, color: '#64748B' }}>{selectedTaskMenu.firm_name}</div>
+              </div>
+              <button
+                onClick={() => setSelectedTaskMenu(null)}
+                style={{ background: 'transparent', border: 'none', fontSize: 18, color: '#94A3B8', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 8, fontSize: 12, color: '#475569', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontWeight: 600 }}>Due Date:</span>
+                <span>{selectedTaskMenu.due_date}</span>
+              </div>
+              {selectedTaskMenu.department_name && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600 }}>Department:</span>
+                  <span>{selectedTaskMenu.department_name}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 600 }}>Assignee:</span>
+                <span>{selectedTaskMenu.assignee_name || 'Unassigned'}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <a
+                href={`/tasks/${selectedTaskMenu.id}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  background: '#2563EB',
+                  color: '#FFF',
+                  padding: '10px 16px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                }}
+              >
+                📋 View Task Detail / Workspace
+              </a>
+              <button
+                onClick={() => openReschedule(selectedTaskMenu)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  background: '#F1F5F9',
+                  color: '#1E293B',
+                  padding: '10px 16px',
+                  borderRadius: 8,
+                  border: '1px solid #CBD5E1',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                📅 Reschedule Due Date
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Section 1.4: Reschedule Modal with Previous Due Date & Mandatory Audit */}
       {rescheduleTask && (
         <div
           style={{
@@ -452,7 +628,7 @@ export default function CalendarPage() {
           <div
             style={{
               width: '100%',
-              maxWidth: 480,
+              maxWidth: 500,
               background: '#FFFFFF',
               borderRadius: 14,
               padding: 28,
@@ -461,15 +637,32 @@ export default function CalendarPage() {
             }}
           >
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
-              Reschedule Task Due Date
+              Reschedule Statutory Due Date
             </h3>
-            <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 20px' }}>
-              Adjusting statutory deadline records audit log and alerts assignees.
+            <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 16px' }}>
+              All reschedule actions are logged in the audit trail with IST timestamp and notified to the assignee.
             </p>
 
-            <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 8, marginBottom: 18 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: '#0F172A' }}>{rescheduleTask.compliance_name}</div>
-              <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{rescheduleTask.firm_name} • Current Due: {rescheduleTask.due_date}</div>
+            {rescheduleError && (
+              <div style={{ background: '#FEE2E2', border: '1px solid #FECACA', color: '#991B1B', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16 }}>
+                {rescheduleError}
+              </div>
+            )}
+
+            {/* Task Context & Previous Due Date Display (Section 1.4) */}
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 14, borderRadius: 8, marginBottom: 18 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#0F172A' }}>{rescheduleTask.compliance_name}</div>
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{rescheduleTask.firm_name}</div>
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed #CBD5E1', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Previous Due Date:</span>
+                <span style={{ fontWeight: 700, color: '#DC2626' }}>{rescheduleTask.due_date}</span>
+              </div>
+              {rescheduleTask.original_due_date && rescheduleTask.original_due_date !== rescheduleTask.due_date && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 4, color: '#94A3B8' }}>
+                  <span>Original Statutory Due Date:</span>
+                  <span>{rescheduleTask.original_due_date}</span>
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: 16 }}>
@@ -481,27 +674,28 @@ export default function CalendarPage() {
                 required
                 value={newDate}
                 onChange={e => setNewDate(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box', fontSize: 14 }}
               />
             </div>
 
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                Reason for Rescheduling *
+                Reason for Rescheduling * <span style={{ color: '#EF4444' }}>(Mandatory)</span>
               </label>
               <textarea
                 rows={3}
                 required
+                placeholder="e.g., Extension granted by MCA, pending client documentation, auditor review"
                 value={rescheduleReason}
                 onChange={e => setRescheduleReason(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box', resize: 'vertical' }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box', resize: 'vertical', fontSize: 13 }}
               />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button
                 onClick={() => setRescheduleTask(null)}
-                style={{ background: '#F1F5F9', color: '#475569', padding: '10px 18px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
+                style={{ background: '#F1F5F9', color: '#475569', padding: '10px 18px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
               >
                 Cancel
               </button>
@@ -509,16 +703,17 @@ export default function CalendarPage() {
                 onClick={handleSaveReschedule}
                 disabled={savingReschedule}
                 style={{
-                  background: '#3B82F6',
+                  background: '#2563EB',
                   color: '#FFF',
                   padding: '10px 22px',
                   borderRadius: 8,
                   border: 'none',
                   fontWeight: 600,
                   cursor: savingReschedule ? 'not-allowed' : 'pointer',
+                  fontSize: 13,
                 }}
               >
-                {savingReschedule ? 'Updating Date...' : 'Save & Record Audit'}
+                {savingReschedule ? 'Recording in Audit...' : 'Confirm & Log Reschedule'}
               </button>
             </div>
           </div>

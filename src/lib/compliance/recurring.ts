@@ -3,7 +3,13 @@ import getDb from '@/lib/db';
 export interface GenerateCalendarOptions {
   firm_id: string;
   financial_year?: string; // e.g. '2026-2027'
-  compliances?: { compliance_id: string; assignee_id?: string; department_id?: string }[];
+  compliances?: {
+    compliance_id: string;
+    assignee_id?: string;
+    department_id?: string;
+    frequency?: string;
+    override_due_day?: number | string;
+  }[];
   created_by?: string;
 }
 
@@ -25,8 +31,13 @@ export function generateFirmComplianceCalendar(options: GenerateCalendarOptions)
   let complianceConfigs = options.compliances;
   if (!complianceConfigs || complianceConfigs.length === 0) {
     const firmComps = db.prepare(`
-      SELECT fc.compliance_id, COALESCE(fc.default_assignee_id, fc.override_assignee_id, 'user_01') as assignee_id, COALESCE(fc.default_department_id, fc.override_department_id) as department_id
+      SELECT fc.compliance_id,
+             COALESCE(fc.override_frequency, c.frequency) as frequency,
+             fc.override_due_day,
+             COALESCE(fc.default_assignee_id, fc.override_assignee_id, 'user_01') as assignee_id,
+             COALESCE(fc.default_department_id, fc.override_department_id) as department_id
       FROM firm_compliances fc
+      JOIN compliances c ON fc.compliance_id = c.id
       WHERE fc.firm_id = ? AND (fc.status = 'active' OR fc.enabled = 1)
     `).all(options.firm_id) as any[];
 
@@ -80,25 +91,31 @@ export function generateFirmComplianceCalendar(options: GenerateCalendarOptions)
     { name: 'Q4 (Jan-Mar)', dueMonth: 4, dueYear: endYear, period: `Q4 ${endYear}` },
   ];
 
+  const halfYears = [
+    { name: 'H1 (Apr-Sep)', dueMonth: 10, dueYear: startYear, period: `H1 ${startYear}` },
+    { name: 'H2 (Oct-Mar)', dueMonth: 4, dueYear: endYear, period: `H2 ${endYear}` },
+  ];
+
   for (const cfg of complianceConfigs) {
     const comp = db.prepare("SELECT * FROM compliances WHERE id = ?").get(cfg.compliance_id) as any;
     if (!comp) continue;
 
-    const freq = (comp.frequency || 'Monthly').toLowerCase();
+    const freq = (cfg.frequency || comp.frequency || 'Monthly').toLowerCase();
     const code = (comp.code || '').toUpperCase();
     const priority = comp.priority || 'medium';
-    const deptId = cfg.department_id || comp.department_id || 'dept_01';
+    const deptId = cfg.department_id || comp.default_department_id || 'dept_01';
     const assigneeId = cfg.assignee_id || null;
+    const customDueDay = cfg.override_due_day ? Number(cfg.override_due_day) : null;
 
     if (freq === 'monthly') {
       for (const m of fyMonths) {
         const periodName = `${m.name} ${m.year}`;
-        // Determine statutory due day:
-        // GSTR-1: 11th of next month; GSTR-3B: 20th of next month; PF/ESI: 15th of next month; PT: 20th
-        let dueDay = 20;
-        if (code.includes('GSTR-1') || code.includes('GSTR1')) dueDay = 11;
-        else if (code.includes('PF') || code.includes('ESI')) dueDay = 15;
-        else if (code.includes('GSTR-3B') || code.includes('3B')) dueDay = 20;
+        let dueDay = customDueDay || 20;
+        if (!customDueDay) {
+          if (code.includes('GSTR-1') || code.includes('GSTR1')) dueDay = 11;
+          else if (code.includes('PF') || code.includes('ESI')) dueDay = 15;
+          else if (code.includes('GSTR-3B') || code.includes('3B')) dueDay = 20;
+        }
 
         // Next month calculation
         let dueMonth = m.monthNum + 1;
@@ -122,9 +139,11 @@ export function generateFirmComplianceCalendar(options: GenerateCalendarOptions)
       }
     } else if (freq === 'quarterly') {
       for (const q of quarters) {
-        let dueDay = 15;
-        if (code.includes('24Q') || code.includes('26Q') || code.includes('27Q')) dueDay = 31;
-        else if (code.includes('ADV_TAX')) dueDay = 15;
+        let dueDay = customDueDay || 15;
+        if (!customDueDay) {
+          if (code.includes('24Q') || code.includes('26Q') || code.includes('27Q')) dueDay = 31;
+          else if (code.includes('ADV_TAX')) dueDay = 15;
+        }
 
         const formattedMonth = q.dueMonth.toString().padStart(2, '0');
         const formattedDay = dueDay.toString().padStart(2, '0');
@@ -137,13 +156,31 @@ export function generateFirmComplianceCalendar(options: GenerateCalendarOptions)
           createdCount++;
         }
       }
-    } else if (freq === 'annual') {
+    } else if (freq === 'half_yearly') {
+      for (const h of halfYears) {
+        let dueDay = customDueDay || 30;
+        const formattedMonth = h.dueMonth.toString().padStart(2, '0');
+        const formattedDay = dueDay.toString().padStart(2, '0');
+        const dueDate = `${h.dueYear}-${formattedMonth}-${formattedDay}`;
+
+        const exists = db.prepare("SELECT id FROM compliance_tasks WHERE firm_id = ? AND compliance_id = ? AND period = ?").get(firm.id, comp.id, h.period);
+        if (!exists) {
+          const taskId = `task_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+          insertTask.run(taskId, firm.id, comp.id, h.period, dueDate, 'pending', priority, assigneeId, reviewerId, deptId, fy, creatorId);
+          createdCount++;
+        }
+      }
+    } else if (freq === 'annual' || freq === 'custom') {
       let dueDate = `${endYear}-09-30`;
       if (code.includes('AOC-4')) dueDate = `${endYear}-10-29`;
       else if (code.includes('MGT-7')) dueDate = `${endYear}-11-28`;
       else if (code.includes('DIR-3')) dueDate = `${endYear}-09-30`;
       else if (code.includes('GSTR-9')) dueDate = `${endYear}-12-31`;
       else if (code.includes('ITR')) dueDate = `${endYear}-10-31`;
+
+      if (customDueDay) {
+        dueDate = `${endYear}-09-${customDueDay.toString().padStart(2, '0')}`;
+      }
 
       const periodName = `FY ${fy}`;
       const exists = db.prepare("SELECT id FROM compliance_tasks WHERE firm_id = ? AND compliance_id = ? AND period = ?").get(firm.id, comp.id, periodName);

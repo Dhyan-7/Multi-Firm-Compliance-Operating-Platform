@@ -53,23 +53,44 @@ export default function NewFirmWizard() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [masterCompliances, setMasterCompliances] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<any[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
   const [selectedCompliances, setSelectedCompliances] = useState<Record<string, boolean>>({});
+  const [complianceConfigs, setComplianceConfigs] = useState<Record<string, {
+    override_due_day?: string;
+    override_frequency?: string;
+    default_department_id?: string;
+    default_assignee_id?: string;
+    priority?: string;
+  }>>({});
+  const [expandedConfigId, setExpandedConfigId] = useState<string | null>(null);
   const [subTab, setSubTab] = useState<'recommended' | 'master'>('recommended');
   const [librarySearch, setLibrarySearch] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
 
   const calculateApplicability = async () => {
     try {
-      // 1. Fetch full Master Compliance Catalog & Categories
+      // 1. Fetch full Master Compliance Catalog, Categories, Departments and Users
       let allItems: any[] = [];
-      const res = await fetch('/api/compliances', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const [compRes, deptRes, userRes] = await Promise.all([
+        fetch('/api/compliances', { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
+        fetch('/api/departments', { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
+        fetch('/api/users', { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
+      ]);
+
+      if (compRes.ok) {
+        const data = await compRes.json();
         allItems = data.compliances || [];
         setMasterCompliances(allItems);
         setCategories(data.categories || []);
+      }
+      if (deptRes.ok) {
+        const dData = await deptRes.json();
+        setDepartmentsList(dData.departments || []);
+      }
+      if (userRes.ok) {
+        const uData = await userRes.json();
+        setUsersList(uData.users || []);
       }
 
       // 2. Evaluate statutory applicability based on firm's profile
@@ -219,16 +240,25 @@ export default function NewFirmWizard() {
 
       const firmId = resData.id;
 
-      // 2. Configure selected compliances for firm
+      // 2. Configure selected compliances for firm with custom configurations
       const selectedIds = Object.keys(selectedCompliances).filter(k => selectedCompliances[k]);
       for (const compId of selectedIds) {
+        const cfg = complianceConfigs[compId] || {};
         await fetch(`/api/firms/${firmId}/compliances`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ compliance_id: compId, status: 'active' }),
+          body: JSON.stringify({
+            compliance_id: compId,
+            status: 'active',
+            override_due_day: cfg.override_due_day || null,
+            override_frequency: cfg.override_frequency || null,
+            default_department_id: cfg.default_department_id || null,
+            default_assignee_id: cfg.default_assignee_id || null,
+            priority: cfg.priority || null,
+          }),
         });
       }
 
@@ -271,7 +301,8 @@ export default function NewFirmWizard() {
           { num: 3, label: 'Location' },
           { num: 4, label: 'Business' },
           { num: 5, label: 'Contacts' },
-          { num: 6, label: 'Applicability' },
+          { num: 6, label: 'Compliances' },
+          { num: 7, label: 'Review & Launch' },
         ].map((s) => {
           const isDone = step > s.num;
           const isCurrent = step === s.num;
@@ -866,60 +897,161 @@ export default function NewFirmWizard() {
           {/* Subtab 1: Recommended Defaults */}
           {subTab === 'recommended' && (
             <div>
-              <div style={{ maxHeight: 380, overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 16 }}>
+              <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 16 }}>
                 {recommendations.map((item) => {
                   const isChecked = !!selectedCompliances[item.id];
+                  const cfg = complianceConfigs[item.id] || {};
+                  const isExpanded = expandedConfigId === item.id;
+
                   return (
-                    <div
-                      key={item.id}
-                      onClick={() => toggleCompliance(item.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        padding: '12px 16px',
-                        borderBottom: '1px solid #F1F5F9',
-                        background: isChecked ? '#FFFFFF' : '#F8FAFC',
-                        cursor: 'pointer',
-                        transition: 'background 0.1s',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {}}
-                        style={{ width: 16, height: 16, cursor: 'pointer' }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontWeight: 600, fontSize: 13, color: isChecked ? '#0F172A' : '#64748B' }}>
-                            {item.name}
-                          </span>
-                          <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, background: '#F1F5F9', color: '#475569', fontWeight: 500 }}>
-                            {item.cat || item.category_name} • {item.freq || item.frequency}
-                          </span>
-                          {item.authority && (
-                            <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>
-                              {item.authority}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#10B981', marginTop: 2 }}>
-                          ✓ {item.reason || 'Mandatory statutory applicability for operational firm profile'}
-                        </div>
-                      </div>
-                      <span
+                    <div key={item.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      <div
+                        onClick={() => toggleCompliance(item.id)}
                         style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: '3px 8px',
-                          borderRadius: 6,
-                          background: isChecked ? '#ECFDF5' : '#F1F5F9',
-                          color: isChecked ? '#059669' : '#94A3B8',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '12px 16px',
+                          background: isChecked ? '#FFFFFF' : '#F8FAFC',
+                          cursor: 'pointer',
+                          transition: 'background 0.1s',
                         }}
                       >
-                        {isChecked ? 'Included' : 'Excluded'}
-                      </span>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          style={{ width: 16, height: 16, cursor: 'pointer' }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontWeight: 600, fontSize: 13, color: isChecked ? '#0F172A' : '#64748B' }}>
+                              {item.name}
+                            </span>
+                            <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, background: '#F1F5F9', color: '#475569', fontWeight: 500 }}>
+                              {item.cat || item.category_name} • {cfg.override_frequency || item.freq || item.frequency}
+                              {cfg.override_due_day ? ` (Day ${cfg.override_due_day})` : ''}
+                            </span>
+                            {item.authority && (
+                              <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>
+                                {item.authority}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#10B981', marginTop: 2 }}>
+                            ✓ {item.reason || 'Mandatory statutory applicability for operational firm profile'}
+                          </div>
+                        </div>
+
+                        {isChecked && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedConfigId(isExpanded ? null : item.id);
+                            }}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              background: isExpanded ? '#EFF6FF' : '#F8FAFC',
+                              color: isExpanded ? '#1D4ED8' : '#475569',
+                              border: '1px solid #CBD5E1',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ⚙️ {isExpanded ? 'Hide Config' : 'Configure'}
+                          </button>
+                        )}
+
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            background: isChecked ? '#ECFDF5' : '#F1F5F9',
+                            color: isChecked ? '#059669' : '#94A3B8',
+                          }}
+                        >
+                          {isChecked ? 'Included' : 'Excluded'}
+                        </span>
+                      </div>
+
+                      {/* Inline Configuration Panel (Section 3.2) */}
+                      {isChecked && isExpanded && (
+                        <div style={{ background: '#F8FAFC', padding: '12px 16px', borderTop: '1px dashed #E2E8F0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, fontSize: 12 }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Frequency</label>
+                            <select
+                              value={cfg.override_frequency || ''}
+                              onChange={(e) => setComplianceConfigs({
+                                ...complianceConfigs,
+                                [item.id]: { ...cfg, override_frequency: e.target.value }
+                              })}
+                              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#FFF' }}
+                            >
+                              <option value="">Default ({item.freq || item.frequency})</option>
+                              <option value="monthly">Monthly</option>
+                              <option value="quarterly">Quarterly</option>
+                              <option value="half_yearly">Half-Yearly</option>
+                              <option value="annual">Annual</option>
+                              <option value="custom">Custom</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Due Day</label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 7, 11, 20"
+                              value={cfg.override_due_day || ''}
+                              onChange={(e) => setComplianceConfigs({
+                                ...complianceConfigs,
+                                [item.id]: { ...cfg, override_due_day: e.target.value }
+                              })}
+                              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Department</label>
+                            <select
+                              value={cfg.default_department_id || ''}
+                              onChange={(e) => setComplianceConfigs({
+                                ...complianceConfigs,
+                                [item.id]: { ...cfg, default_department_id: e.target.value }
+                              })}
+                              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#FFF' }}
+                            >
+                              <option value="">-- Dept --</option>
+                              {departmentsList.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Assignee</label>
+                            <select
+                              value={cfg.default_assignee_id || ''}
+                              onChange={(e) => setComplianceConfigs({
+                                ...complianceConfigs,
+                                [item.id]: { ...cfg, default_assignee_id: e.target.value }
+                              })}
+                              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#FFF' }}
+                            >
+                              <option value="">-- Assignee --</option>
+                              {usersList
+                                .filter(u => !cfg.default_department_id || u.department_id === cfg.default_department_id)
+                                .map(u => (
+                                  <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1033,77 +1165,170 @@ export default function NewFirmWizard() {
                 }
 
                 return (
-                  <div style={{ maxHeight: 380, overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 16 }}>
+                  <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 16 }}>
                     {filtered.map((item) => {
                       const isChecked = !!selectedCompliances[item.id];
                       const isDefaultRec = recIds.has(item.id);
+                      const cfg = complianceConfigs[item.id] || {};
+                      const isExpanded = expandedConfigId === item.id;
 
                       return (
-                        <div
-                          key={item.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '10px 16px',
-                            borderBottom: '1px solid #F1F5F9',
-                            background: isChecked ? '#F0FDF4' : '#FFFFFF',
-                            gap: 12,
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontWeight: 600, fontSize: 13, color: '#0F172A' }}>
-                                {item.name}
-                              </span>
-                              <span
+                        <div key={item.id} style={{ borderBottom: '1px solid #F1F5F9', background: isChecked ? '#F0FDF4' : '#FFFFFF' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '10px 16px',
+                              gap: 12,
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontWeight: 600, fontSize: 13, color: '#0F172A' }}>
+                                  {item.name}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    padding: '2px 6px',
+                                    borderRadius: 4,
+                                    background: item.category_color ? `${item.category_color}18` : '#F1F5F9',
+                                    color: item.category_color || '#475569',
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {item.category_name || 'General'}
+                                </span>
+                                <span style={{ fontSize: 11, color: '#64748B' }}>
+                                  • {cfg.override_frequency || (item.frequency ? item.frequency.toUpperCase() : 'MONTHLY')}
+                                </span>
+                                {item.authority && (
+                                  <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>
+                                    ({item.authority})
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#64748B', marginTop: 2, display: 'flex', gap: 10 }}>
+                                <span>Code: <code>{item.code}</code></span>
+                                {item.description && <span>• {item.description}</span>}
+                                {isDefaultRec && (
+                                  <span style={{ color: '#059669', fontWeight: 600 }}>⭐ Recommended Default</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              {isChecked && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedConfigId(isExpanded ? null : item.id)}
+                                  style={{
+                                    padding: '5px 10px',
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    background: '#FFF',
+                                    border: '1px solid #CBD5E1',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  ⚙️ {isExpanded ? 'Hide' : 'Config'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => toggleCompliance(item.id)}
                                 style={{
-                                  fontSize: 11,
-                                  padding: '2px 6px',
-                                  borderRadius: 4,
-                                  background: item.category_color ? `${item.category_color}18` : '#F1F5F9',
-                                  color: item.category_color || '#475569',
+                                  padding: '6px 14px',
+                                  borderRadius: 6,
+                                  fontSize: 12,
                                   fontWeight: 600,
+                                  cursor: 'pointer',
+                                  border: isChecked ? '1px solid #10B981' : '1px solid #3B82F6',
+                                  background: isChecked ? '#10B981' : '#FFFFFF',
+                                  color: isChecked ? '#FFFFFF' : '#3B82F6',
+                                  whiteSpace: 'nowrap',
+                                  transition: 'all 0.15s',
                                 }}
                               >
-                                {item.category_name || 'General'}
-                              </span>
-                              <span style={{ fontSize: 11, color: '#64748B' }}>
-                                • {item.frequency ? item.frequency.toUpperCase() : 'MONTHLY'}
-                              </span>
-                              {item.authority && (
-                                <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>
-                                  ({item.authority})
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ fontSize: 11, color: '#64748B', marginTop: 2, display: 'flex', gap: 10 }}>
-                              <span>Code: <code>{item.code}</code></span>
-                              {item.description && <span>• {item.description}</span>}
-                              {isDefaultRec && (
-                                <span style={{ color: '#059669', fontWeight: 600 }}>⭐ Recommended Default</span>
-                              )}
+                                {isChecked ? '✓ Added' : '+ Add'}
+                              </button>
                             </div>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => toggleCompliance(item.id)}
-                            style={{
-                              padding: '6px 14px',
-                              borderRadius: 6,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              border: isChecked ? '1px solid #10B981' : '1px solid #3B82F6',
-                              background: isChecked ? '#10B981' : '#FFFFFF',
-                              color: isChecked ? '#FFFFFF' : '#3B82F6',
-                              whiteSpace: 'nowrap',
-                              transition: 'all 0.15s',
-                            }}
-                          >
-                            {isChecked ? '✓ Added to Firm' : '+ Add to Firm'}
-                          </button>
+                          {isChecked && isExpanded && (
+                            <div style={{ background: '#F8FAFC', padding: '12px 16px', borderTop: '1px dashed #E2E8F0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, fontSize: 12 }}>
+                              <div>
+                                <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Frequency</label>
+                                <select
+                                  value={cfg.override_frequency || ''}
+                                  onChange={(e) => setComplianceConfigs({
+                                    ...complianceConfigs,
+                                    [item.id]: { ...cfg, override_frequency: e.target.value }
+                                  })}
+                                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#FFF' }}
+                                >
+                                  <option value="">Default ({item.frequency || 'Monthly'})</option>
+                                  <option value="monthly">Monthly</option>
+                                  <option value="quarterly">Quarterly</option>
+                                  <option value="half_yearly">Half-Yearly</option>
+                                  <option value="annual">Annual</option>
+                                  <option value="custom">Custom</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Due Day</label>
+                                <input
+                                  type="number"
+                                  placeholder="e.g. 7, 11, 20"
+                                  value={cfg.override_due_day || ''}
+                                  onChange={(e) => setComplianceConfigs({
+                                    ...complianceConfigs,
+                                    [item.id]: { ...cfg, override_due_day: e.target.value }
+                                  })}
+                                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                                />
+                              </div>
+
+                              <div>
+                                <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Department</label>
+                                <select
+                                  value={cfg.default_department_id || ''}
+                                  onChange={(e) => setComplianceConfigs({
+                                    ...complianceConfigs,
+                                    [item.id]: { ...cfg, default_department_id: e.target.value }
+                                  })}
+                                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#FFF' }}
+                                >
+                                  <option value="">-- Dept --</option>
+                                  {departmentsList.map(d => (
+                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 4 }}>Assignee</label>
+                                <select
+                                  value={cfg.default_assignee_id || ''}
+                                  onChange={(e) => setComplianceConfigs({
+                                    ...complianceConfigs,
+                                    [item.id]: { ...cfg, default_assignee_id: e.target.value }
+                                  })}
+                                  style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #CBD5E1', background: '#FFF' }}
+                                >
+                                  <option value="">-- Assignee --</option>
+                                  {usersList
+                                    .filter(u => !cfg.default_department_id || u.department_id === cfg.default_department_id)
+                                    .map(u => (
+                                      <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
+                                </select>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1113,23 +1338,8 @@ export default function NewFirmWizard() {
             </div>
           )}
 
-          {/* Calendar Generation Callout */}
-          <div
-            style={{
-              padding: '14px 18px',
-              borderRadius: 8,
-              background: '#F0F9FF',
-              border: '1px solid #BAE6FD',
-              marginBottom: 24,
-              fontSize: 13,
-              color: '#0369A1',
-            }}
-          >
-            <strong>Automatic Calendar Task Generation:</strong> Clicking &quot;Register Firm &amp; Generate Calendar&quot; will create the enterprise firm record, bind all {Object.keys(selectedCompliances).filter(k => selectedCompliances[k]).length} chosen statutory &amp; master compliances, and immediately calculate and generate all recurring statutory tasks with official due dates for Financial Year {business.financial_year}.
-          </div>
-
-          {/* Navigation Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {/* Navigation Buttons to Step 7 Review */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
             <button
               type="button"
               onClick={() => setStep(5)}
@@ -1139,12 +1349,156 @@ export default function NewFirmWizard() {
             </button>
             <button
               type="button"
+              onClick={() => setStep(7)}
+              style={{
+                background: '#2563EB',
+                color: '#FFF',
+                padding: '12px 28px',
+                borderRadius: 8,
+                border: 'none',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: 'pointer',
+              }}
+            >
+              Continue to Review &amp; Launch (Step 7) →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 7: Review & Final Confirmation (Section 3.4) */}
+      {step === 7 && (
+        <div style={{ background: '#FFF', padding: 28, borderRadius: 12, border: '1px solid #E2E8F0' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
+            Step 7: Review Firm Details &amp; Operational Launch
+          </h2>
+          <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 20px' }}>
+            Verify all registered information, statutory compliances, and calendar scheduling parameters before creating the firm.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+            {/* Identity & Legal Card */}
+            <div style={{ background: '#F8FAFC', padding: 18, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', marginBottom: 10 }}>
+                🏢 Entity &amp; Legal Profile
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{identity.display_name}</div>
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Legal Name: {identity.legal_name || identity.display_name}</div>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 6 }}>
+                Industry: <strong>{business.industry}</strong> • Scale: <strong>{business.employee_count} Employees</strong>
+              </div>
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
+                Turnover: <strong>{business.turnover_band}</strong> • FY: <strong>{business.financial_year}</strong>
+              </div>
+            </div>
+
+            {/* Tax & Registrations Card */}
+            <div style={{ background: '#F8FAFC', padding: 18, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', textTransform: 'uppercase', marginBottom: 10 }}>
+                📝 Tax &amp; Regulatory Identifiers
+              </div>
+              <div style={{ fontSize: 13, color: '#334155' }}>
+                <div>PAN: <strong>{tax.pan || 'N/A'}</strong></div>
+                <div style={{ marginTop: 4 }}>GSTIN: <strong>{tax.gstin || 'N/A'}</strong></div>
+                <div style={{ marginTop: 4 }}>CIN/LLPIN: <strong>{identity.cin_llpin || 'N/A'}</strong></div>
+                <div style={{ marginTop: 4 }}>TAN: <strong>{tax.tan || 'N/A'}</strong></div>
+              </div>
+            </div>
+
+            {/* Address Card */}
+            <div style={{ background: '#F8FAFC', padding: 18, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', marginBottom: 10 }}>
+                📍 Registered Location
+              </div>
+              <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.5 }}>
+                <div>{address.address_line1}</div>
+                <div>{address.city}, {address.state} - {address.pincode}</div>
+              </div>
+            </div>
+
+            {/* Liaison Card */}
+            <div style={{ background: '#F8FAFC', padding: 18, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', marginBottom: 10 }}>
+                👤 Authorized Liaison
+              </div>
+              <div style={{ fontSize: 13, color: '#334155' }}>
+                <div style={{ fontWeight: 600 }}>{contacts.name || 'Not specified'}</div>
+                <div style={{ fontSize: 12, color: '#64748B' }}>{contacts.designation}</div>
+                <div style={{ marginTop: 4 }}>✉️ {contacts.email || 'N/A'}</div>
+                <div>📞 {contacts.phone || 'N/A'}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Configured Compliances Summary Table */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', margin: '0 0 10px' }}>
+              Selected Statutory Compliances ({Object.keys(selectedCompliances).filter(k => selectedCompliances[k]).length})
+            </h3>
+            <div style={{ maxHeight: 250, overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: 8 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
+                    <th style={{ padding: '8px 12px' }}>Compliance</th>
+                    <th style={{ padding: '8px 12px' }}>Code</th>
+                    <th style={{ padding: '8px 12px' }}>Frequency</th>
+                    <th style={{ padding: '8px 12px' }}>Due Day</th>
+                    <th style={{ padding: '8px 12px' }}>Department</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(selectedCompliances).filter(k => selectedCompliances[k]).map(compId => {
+                    const item = masterCompliances.find(m => m.id === compId) || recommendations.find(r => r.id === compId);
+                    const cfg = complianceConfigs[compId] || {};
+                    const dept = departmentsList.find(d => d.id === cfg.default_department_id);
+                    return (
+                      <tr key={compId} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '8px 12px', fontWeight: 600, color: '#0F172A' }}>{item?.name || compId}</td>
+                        <td style={{ padding: '8px 12px', color: '#64748B' }}>{item?.code || '—'}</td>
+                        <td style={{ padding: '8px 12px', textTransform: 'capitalize' }}>{cfg.override_frequency || item?.frequency || 'Monthly'}</td>
+                        <td style={{ padding: '8px 12px' }}>{cfg.override_due_day || item?.due_day || 'Statutory rule'}</td>
+                        <td style={{ padding: '8px 12px', color: '#64748B' }}>{dept?.name || 'Default'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Calendar Generation Callout */}
+          <div
+            style={{
+              padding: '14px 18px',
+              borderRadius: 8,
+              background: '#F0FDF4',
+              border: '1px solid #BBF7D0',
+              marginBottom: 24,
+              fontSize: 13,
+              color: '#166534',
+            }}
+          >
+            <strong>Launch Execution:</strong> Creating this firm will immediately initialize its enterprise workspace, establish firm-level compliance bindings, and automatically generate all recurring tasks for Financial Year {business.financial_year}.
+          </div>
+
+          {/* Navigation Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <button
+              type="button"
+              onClick={() => setStep(6)}
+              style={{ background: '#F1F5F9', color: '#475569', padding: '10px 20px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
+            >
+              ← Back to Compliances
+            </button>
+            <button
+              type="button"
               onClick={handleFinalSubmit}
               disabled={loading}
               style={{
                 background: '#10B981',
                 color: '#FFF',
-                padding: '12px 28px',
+                padding: '12px 32px',
                 borderRadius: 8,
                 border: 'none',
                 fontWeight: 700,
@@ -1153,7 +1507,7 @@ export default function NewFirmWizard() {
                 boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)',
               }}
             >
-              {loading ? 'Generating Organization & Calendar...' : '🚀 Register Firm & Generate Full FY Calendar'}
+              {loading ? 'Registering Organization & Launching Schedule...' : '🚀 Register Firm & Launch FY Schedule'}
             </button>
           </div>
         </div>

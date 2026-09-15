@@ -20,6 +20,21 @@ export default function DepartmentsPage() {
   const [editForm, setEditForm] = useState({ name: '', head_user_id: '' });
   const [editSaving, setEditSaving] = useState(false);
 
+  // View Members Modal
+  const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [activeDeptForMembers, setActiveDeptForMembers] = useState<any>(null);
+  const [deptMembers, setDeptMembers] = useState<any[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [selectedAddUserId, setSelectedAddUserId] = useState('');
+  const [reassigningUserId, setReassigningUserId] = useState<string | null>(null);
+  const [targetDeptForUser, setTargetDeptForUser] = useState('');
+
+  // Delete with Transfer Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deptToDelete, setDeptToDelete] = useState<any>(null);
+  const [transferTargetDeptId, setTransferTargetDeptId] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
   const fetchDepartments = async () => {
     if (!token) return;
     try {
@@ -37,14 +52,22 @@ export default function DepartmentsPage() {
     }
   };
 
+  const fetchUsers = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const d = await res.json();
+        setUsers(d.users || []);
+      }
+    } catch (err) {
+      console.error('Fetch users error:', err);
+    }
+  };
+
   useEffect(() => {
     fetchDepartments();
-    if (token) {
-      fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => res.json())
-        .then(d => setUsers(d.users || []))
-        .catch(console.error);
-    }
+    fetchUsers();
   }, [token]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -112,27 +135,121 @@ export default function DepartmentsPage() {
     }
   };
 
-  const handleDelete = async (dept: any) => {
-    if (!confirm(`Are you sure you want to delete department "${dept.name}"?`)) return;
-    if (!token) return;
-    setFeedback(null);
+  // Open members modal
+  const openMembersModal = async (dept: any) => {
+    setActiveDeptForMembers(dept);
+    setMembersModalOpen(true);
+    setLoadingMembers(true);
+    setSelectedAddUserId('');
+    setReassigningUserId(null);
     try {
       const res = await fetch(`/api/departments/${dept.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDeptMembers(data.members || []);
+      }
+    } catch (err) {
+      console.error('Fetch members error:', err);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  // Add/transfer user to active department
+  const handleAddUserToDept = async () => {
+    if (!token || !activeDeptForMembers || !selectedAddUserId) return;
+    try {
+      const res = await fetch(`/api/departments/${activeDeptForMembers.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reassign_user_ids: [selectedAddUserId] }),
+      });
+      if (res.ok) {
+        setSelectedAddUserId('');
+        // Refresh members & dept counts
+        openMembersModal(activeDeptForMembers);
+        fetchDepartments();
+        fetchUsers();
+        setFeedback({ type: 'success', message: 'Staff member added to department successfully' });
+      } else {
+        const d = await res.json();
+        setFeedback({ type: 'error', message: d.error || 'Failed to assign user' });
+      }
+    } catch (err) {
+      console.error('Add user error:', err);
+    }
+  };
+
+  // Reassign single user to another department
+  const handleReassignUser = async (userId: string, newDeptId: string) => {
+    if (!token || !newDeptId) return;
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ department_id: newDeptId }),
+      });
+      if (res.ok) {
+        setReassigningUserId(null);
+        openMembersModal(activeDeptForMembers);
+        fetchDepartments();
+        fetchUsers();
+        setFeedback({ type: 'success', message: 'Staff member reassigned successfully' });
+      } else {
+        const d = await res.json();
+        setFeedback({ type: 'error', message: d.error || 'Failed to reassign staff' });
+      }
+    } catch (err) {
+      console.error('Reassign user error:', err);
+    }
+  };
+
+  const initiateDelete = (dept: any) => {
+    setDeptToDelete(dept);
+    if (dept.member_count > 0) {
+      // Find default other department
+      const other = departments.find(d => d.id !== dept.id);
+      setTransferTargetDeptId(other ? other.id : '');
+      setDeleteModalOpen(true);
+    } else {
+      if (confirm(`Are you sure you want to delete department "${dept.name}"?`)) {
+        performDelete(dept.id);
+      }
+    }
+  };
+
+  const performDelete = async (deptId: string, transferTo?: string) => {
+    if (!token) return;
+    setDeleting(true);
+    setFeedback(null);
+    try {
+      const url = transferTo ? `/api/departments/${deptId}?transfer_to=${transferTo}` : `/api/departments/${deptId}`;
+      const res = await fetch(url, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (res.ok) {
+        setDeleteModalOpen(false);
+        setDeptToDelete(null);
         setFeedback({ type: 'success', message: 'Department deleted successfully' });
         fetchDepartments();
+        fetchUsers();
       } else {
         setFeedback({ type: 'error', message: data.error || 'Failed to delete department' });
       }
     } catch (err) {
       console.error('Delete dept error:', err);
       setFeedback({ type: 'error', message: 'Network error deleting department' });
+    } finally {
+      setDeleting(false);
     }
   };
+
+  // Users not currently in active department
+  const eligibleUsersToAdd = users.filter(u => !deptMembers.some(m => m.id === u.id));
 
   return (
     <div>
@@ -153,7 +270,7 @@ export default function DepartmentsPage() {
             Organizational Departments ({departments.length})
           </h2>
           <p style={{ fontSize: 13, color: '#64748B', margin: '4px 0 0' }}>
-            Structure operational units, designate department heads, and manage functional compliance hierarchies.
+            Structure operational units, designate department heads, manage staff assignments, and track department compliance workload.
           </p>
         </div>
 
@@ -240,12 +357,12 @@ export default function DepartmentsPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 16, borderTop: '1px solid #F1F5F9', paddingTop: 12, marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{d.member_count || 0}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A' }}>{d.member_count || 0}</div>
                     <div style={{ fontSize: 11, color: '#64748B' }}>Assigned Staff</div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#2563EB' }}>{d.task_count || 0}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: '#2563EB' }}>{d.task_count || 0}</div>
                     <div style={{ fontSize: 11, color: '#64748B' }}>Department Tasks</div>
                   </div>
                 </div>
@@ -253,14 +370,33 @@ export default function DepartmentsPage() {
 
               <div style={{ display: 'flex', gap: 8, borderTop: '1px solid #F1F5F9', paddingTop: 14 }}>
                 <button
+                  onClick={() => openMembersModal(d)}
+                  style={{
+                    flex: 1.5,
+                    background: '#EFF6FF',
+                    color: '#1D4ED8',
+                    border: '1px solid #BFDBFE',
+                    borderRadius: 6,
+                    padding: '7px 12px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 5
+                  }}
+                >
+                  👥 Manage Staff ({d.member_count || 0})
+                </button>
+                <button
                   onClick={() => openEditModal(d)}
                   style={{
-                    flex: 1,
                     background: '#F8FAFC',
                     color: '#334155',
                     border: '1px solid #CBD5E1',
                     borderRadius: 6,
-                    padding: '6px 12px',
+                    padding: '7px 12px',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -269,13 +405,13 @@ export default function DepartmentsPage() {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(d)}
+                  onClick={() => initiateDelete(d)}
                   style={{
                     background: '#FFF',
                     color: '#EF4444',
                     border: '1px solid #FCA5A5',
                     borderRadius: 6,
-                    padding: '6px 12px',
+                    padding: '7px 12px',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -289,7 +425,7 @@ export default function DepartmentsPage() {
         </div>
       )}
 
-      {/* Add Modal */}
+      {/* Add Dept Modal */}
       {modalOpen && (
         <div
           style={{
@@ -346,7 +482,7 @@ export default function DepartmentsPage() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* Edit Dept Modal */}
       {editModalOpen && editingDept && (
         <div
           style={{
@@ -398,6 +534,239 @@ export default function DepartmentsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Department Staff & Members Drawer/Modal */}
+      {membersModalOpen && activeDeptForMembers && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#FFF', borderRadius: 14, border: '1px solid #E2E8F0', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC' }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                  {activeDeptForMembers.name} — Staff Roster
+                </h3>
+                <p style={{ fontSize: 12, color: '#64748B', margin: '4px 0 0' }}>
+                  Manage and reassign employees assigned to this organizational department.
+                </p>
+              </div>
+              <button
+                onClick={() => setMembersModalOpen(false)}
+                style={{ background: 'none', border: 'none', fontSize: 18, color: '#64748B', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '16px 24px', background: '#F1F5F9', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <select
+                value={selectedAddUserId}
+                onChange={e => setSelectedAddUserId(e.target.value)}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF', fontSize: 13 }}
+              >
+                <option value="">Select staff member to assign to {activeDeptForMembers.name}...</option>
+                {eligibleUsersToAdd.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.department_name || 'No Dept'} • {u.role_name || 'User'})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleAddUserToDept}
+                disabled={!selectedAddUserId}
+                style={{
+                  background: selectedAddUserId ? '#2563EB' : '#94A3B8',
+                  color: '#FFF',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: selectedAddUserId ? 'pointer' : 'not-allowed',
+                }}
+              >
+                + Add Member
+              </button>
+            </div>
+
+            <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
+              {loadingMembers ? (
+                <div style={{ padding: 32, textAlign: 'center', color: '#64748B' }}>Loading staff members...</div>
+              ) : deptMembers.length === 0 ? (
+                <div style={{ padding: 32, textAlign: 'center', color: '#64748B', border: '1px dashed #CBD5E1', borderRadius: 8 }}>
+                  No staff members currently assigned to {activeDeptForMembers.name}.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {deptMembers.map(m => (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 16px',
+                        background: '#FFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {m.name}
+                          {activeDeptForMembers.head_user_id === m.id && (
+                            <span style={{ fontSize: 10, background: '#FEF3C7', color: '#92400E', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                              HEAD
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#64748B' }}>
+                          {m.email} • {m.designation || m.role_name || 'Staff'}
+                        </div>
+                      </div>
+
+                      <div>
+                        {reassigningUserId === m.id ? (
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <select
+                              value={targetDeptForUser}
+                              onChange={e => setTargetDeptForUser(e.target.value)}
+                              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: 12, background: '#FFF' }}
+                            >
+                              <option value="">Move to...</option>
+                              {departments.filter(d => d.id !== activeDeptForMembers.id).map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => handleReassignUser(m.id, targetDeptForUser)}
+                              disabled={!targetDeptForUser}
+                              style={{ background: '#2563EB', color: '#FFF', border: 'none', padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: targetDeptForUser ? 'pointer' : 'not-allowed' }}
+                            >
+                              Move
+                            </button>
+                            <button
+                              onClick={() => setReassigningUserId(null)}
+                              style={{ background: '#F1F5F9', color: '#475569', border: 'none', padding: '6px 8px', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setReassigningUserId(m.id); setTargetDeptForUser(''); }}
+                            style={{
+                              background: '#F8FAFC',
+                              color: '#334155',
+                              border: '1px solid #CBD5E1',
+                              borderRadius: 6,
+                              padding: '5px 12px',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Reassign Dept
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #E2E8F0', background: '#F8FAFC', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setMembersModalOpen(false)}
+                style={{ background: '#2563EB', color: '#FFF', padding: '8px 20px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete with Transfer Confirmation Modal */}
+      {deleteModalOpen && deptToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: 480, background: '#FFF', borderRadius: 14, padding: 28, border: '1px solid #E2E8F0', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#991B1B', margin: '0 0 12px' }}>
+              Delete Department &quot;{deptToDelete.name}&quot;
+            </h3>
+            <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.5, marginBottom: 16 }}>
+              This department currently has <strong>{deptToDelete.member_count} staff member(s)</strong> assigned. To preserve data integrity and operational continuity, please select a destination department to transfer these staff members and their associated tasks before deletion:
+            </p>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                Transfer Staff & Tasks To: *
+              </label>
+              <select
+                value={transferTargetDeptId}
+                onChange={e => setTransferTargetDeptId(e.target.value)}
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF', fontSize: 13 }}
+              >
+                <option value="">Select destination department...</option>
+                {departments.filter(d => d.id !== deptToDelete.id).map(d => (
+                  <option key={d.id} value={d.id}>{d.name} ({d.member_count || 0} members)</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => { setDeleteModalOpen(false); setDeptToDelete(null); }}
+                style={{ background: '#F1F5F9', color: '#475569', padding: '9px 16px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!transferTargetDeptId || deleting}
+                onClick={() => performDelete(deptToDelete.id, transferTargetDeptId)}
+                style={{
+                  background: transferTargetDeptId && !deleting ? '#DC2626' : '#94A3B8',
+                  color: '#FFF',
+                  padding: '9px 20px',
+                  borderRadius: 8,
+                  border: 'none',
+                  fontWeight: 600,
+                  cursor: transferTargetDeptId && !deleting ? 'pointer' : 'not-allowed'
+                }}
+              >
+                {deleting ? 'Transferring & Deleting...' : 'Transfer & Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}

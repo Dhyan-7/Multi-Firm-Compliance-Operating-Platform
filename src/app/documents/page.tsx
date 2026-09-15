@@ -7,12 +7,34 @@ export default function DocumentsVaultPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [firms, setFirms] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState('');
 
   // Filters
   const [selectedFirm, setSelectedFirm] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedDept, setSelectedDept] = useState('all');
   const [search, setSearch] = useState('');
+
+  // Upload Modal & Drag-and-Drop
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFirmId, setUploadFirmId] = useState('');
+  const [uploadDeptId, setUploadDeptId] = useState('');
+  const [uploadDocType, setUploadDocType] = useState('Tax Challan / Receipt');
+  const [uploadFileName, setUploadFileName] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  // Rename Modal
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameDocId, setRenameDocId] = useState('');
+  const [renameFileName, setRenameFileName] = useState('');
+  const [renameDocType, setRenameDocType] = useState('');
+  const [renameDeptId, setRenameDeptId] = useState('');
+  const [renaming, setRenaming] = useState(false);
 
   const fetchDocuments = async () => {
     if (!token) return;
@@ -21,6 +43,8 @@ export default function DocumentsVaultPage() {
       const query = new URLSearchParams();
       if (selectedFirm !== 'all') query.set('firm_id', selectedFirm);
       if (selectedCategory !== 'all') query.set('category_id', selectedCategory);
+      if (selectedType !== 'all') query.set('document_type', selectedType);
+      if (selectedDept !== 'all') query.set('department_id', selectedDept);
       if (search) query.set('search', search);
 
       const res = await fetch(`/api/documents?${query.toString()}`, {
@@ -32,6 +56,10 @@ export default function DocumentsVaultPage() {
         setDocuments(data.documents || []);
         setFirms(data.firms || []);
         setCategories(data.categories || []);
+        setDepartments(data.departments || []);
+        if (data.firms?.length > 0 && !uploadFirmId) {
+          setUploadFirmId(data.firms[0].id);
+        }
       }
     } catch (err) {
       console.error('Fetch documents error:', err);
@@ -42,7 +70,144 @@ export default function DocumentsVaultPage() {
 
   useEffect(() => {
     fetchDocuments();
-  }, [token, selectedFirm, selectedCategory, search]);
+  }, [token, selectedFirm, selectedCategory, selectedType, selectedDept, search]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/firms', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(d => {
+        if (d.firms?.length > 0) {
+          setFirms(d.firms);
+          setUploadFirmId(prev => prev || d.firms[0].id);
+        }
+      })
+      .catch(console.error);
+
+    fetch('/api/departments', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(d => {
+        if (d.departments?.length > 0) {
+          setDepartments(d.departments);
+        }
+      })
+      .catch(console.error);
+  }, [token]);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      setUploadFile(file);
+      setUploadFileName(file.name);
+      setUploadModalOpen(true);
+    }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !uploadFile) return;
+    if (!uploadFirmId) {
+      alert('Please select an organization.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('firm_id', uploadFirmId);
+      if (uploadDeptId) formData.append('department_id', uploadDeptId);
+      formData.append('document_type', uploadDocType);
+
+      const res = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setNotice(`Document "${uploadFile.name}" uploaded successfully to vault.`);
+        setUploadModalOpen(false);
+        setUploadFile(null);
+        setUploadFileName('');
+        fetchDocuments();
+      } else {
+        alert(data.error || 'Failed to upload document');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const openRenameModal = (doc: any) => {
+    setRenameDocId(doc.id);
+    setRenameFileName(doc.file_name || '');
+    setRenameDocType(doc.document_type || 'General Document');
+    setRenameDeptId(doc.department_id || '');
+    setRenameModalOpen(true);
+  };
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !renameDocId || !renameFileName.trim()) return;
+
+    setRenaming(true);
+    try {
+      const res = await fetch('/api/documents', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id: renameDocId,
+          file_name: renameFileName.trim(),
+          document_type: renameDocType,
+          department_id: renameDeptId || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setNotice('Document updated successfully.');
+        setRenameModalOpen(false);
+        fetchDocuments();
+      } else {
+        alert(data.error || 'Failed to update document');
+      }
+    } catch (err) {
+      console.error('Rename error:', err);
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const handleDelete = async (doc: any) => {
+    if (!token) return;
+    const confirmed = window.confirm(`Are you sure you want to remove "${doc.file_name}" from the document vault?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/documents?id=${doc.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotice(data.message || 'Document deleted from vault.');
+        fetchDocuments();
+      } else {
+        alert(data.error || 'Failed to delete document');
+      }
+    } catch (err) {
+      console.error('Delete document error:', err);
+    }
+  };
 
   return (
     <div>
@@ -57,16 +222,48 @@ export default function DocumentsVaultPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 12,
         }}
       >
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-            Centralized Statutory Document Vault
+            Centralized Statutory Document Vault ({documents.length})
           </h2>
           <p style={{ fontSize: 13, color: '#64748B', margin: '4px 0 0' }}>
             Permanent repository of tax challans, acknowledgement receipts, and signed regulatory filings.
           </p>
         </div>
+
+        <button
+          onClick={() => {
+            setUploadFile(null);
+            setUploadFileName('');
+            setUploadModalOpen(true);
+          }}
+          style={{
+            background: '#2563EB',
+            color: '#FFFFFF',
+            padding: '9px 18px',
+            borderRadius: 8,
+            border: 'none',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+          }}
+        >
+          <span>+</span> Upload Document
+        </button>
+
+        {notice && (
+          <div style={{ width: '100%', marginTop: 8, padding: '8px 14px', background: '#ECFDF5', color: '#065F46', borderRadius: 8, fontSize: 13, border: '1px solid #A7F3D0' }}>
+            ✓ {notice}
+          </div>
+        )}
       </div>
 
       {/* Main Layout: Left Folder Tree, Right Documents Grid/Table */}
@@ -165,15 +362,77 @@ export default function DocumentsVaultPage() {
 
         {/* Right Documents List */}
         <div>
-          {/* Search bar */}
-          <div style={{ marginBottom: 16 }}>
+          {/* Drag & Drop Upload Zone */}
+          <div
+            onDragOver={e => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => {
+              setUploadFile(null);
+              setUploadFileName('');
+              setUploadModalOpen(true);
+            }}
+            style={{
+              border: dragOver ? '2px dashed #2563EB' : '2px dashed #CBD5E1',
+              background: dragOver ? '#EFF6FF' : '#F8FAFC',
+              borderRadius: 10,
+              padding: '16px 20px',
+              textAlign: 'center',
+              marginBottom: 16,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span style={{ fontSize: 24, display: 'block', marginBottom: 4 }}>📤</span>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#1E293B' }}>
+              Drag & drop files here to upload to the Vault, or <span style={{ color: '#2563EB', textDecoration: 'underline' }}>browse files</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+              Supports PDFs, challans, signed filings, incorporation documents, and certificates (up to 25MB)
+            </div>
+          </div>
+
+          {/* Filter and Search bar */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
             <input
               type="text"
               placeholder="Search documents by filename, challan reference, or compliance..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ width: '100%', padding: '10px 16px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF', boxSizing: 'border-box' }}
+              style={{ flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
             />
+
+            <select
+              value={selectedType}
+              onChange={e => setSelectedType(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+            >
+              <option value="all">All Document Types</option>
+              <option value="Statutory Return">Statutory Return</option>
+              <option value="Tax Challan / Receipt">Tax Challan / Receipt</option>
+              <option value="Filing Acknowledgement">Filing Acknowledgement</option>
+              <option value="Incorporation Certificate">Incorporation Certificate</option>
+              <option value="PAN / TAN Copy">PAN / TAN Copy</option>
+              <option value="GST Registration Certificate">GST Registration Certificate</option>
+              <option value="Audit Report">Audit Report</option>
+              <option value="Notice / Summon">Notice / Summon</option>
+              <option value="Contract / Agreement">Contract / Agreement</option>
+              <option value="General Document">General Document</option>
+            </select>
+
+            <select
+              value={selectedDept}
+              onChange={e => setSelectedDept(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+            >
+              <option value="all">All Departments</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
           </div>
 
           <div style={{ background: '#FFF', borderRadius: 12, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
@@ -187,7 +446,7 @@ export default function DocumentsVaultPage() {
                 <div style={{ fontSize: 36, marginBottom: 12 }}>📁</div>
                 <h3 style={{ fontSize: 16, color: '#0F172A', margin: 0 }}>No documents found</h3>
                 <p style={{ fontSize: 13, color: '#64748B', margin: '6px 0 0' }}>
-                  Upload challans or filings through the Task Detail Workspace.
+                  Upload standalone firm documents or statutory filings using the upload area above.
                 </p>
               </div>
             ) : (
@@ -197,10 +456,11 @@ export default function DocumentsVaultPage() {
                     <th style={{ padding: '12px' }}>Document Name</th>
                     <th style={{ padding: '12px' }}>Type</th>
                     <th style={{ padding: '12px' }}>Organization</th>
-                    <th style={{ padding: '12px' }}>Compliance & Period</th>
+                    <th style={{ padding: '12px' }}>Department</th>
+                    <th style={{ padding: '12px' }}>Compliance / Period</th>
                     <th style={{ padding: '12px' }}>Size</th>
                     <th style={{ padding: '12px' }}>Uploaded By</th>
-                    <th style={{ padding: '12px', textAlign: 'right' }}>Action</th>
+                    <th style={{ padding: '12px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -209,36 +469,80 @@ export default function DocumentsVaultPage() {
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontSize: 18 }}>📄</span>
-                          <span style={{ fontWeight: 600, color: '#0F172A' }}>{d.file_name}</span>
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#0F172A' }}>{d.file_name}</div>
+                            <div style={{ fontSize: 10, color: '#94A3B8' }}>
+                              {new Date(d.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td style={{ padding: '12px' }}>
                         <span style={{ fontSize: 11, background: '#F1F5F9', padding: '2px 8px', borderRadius: 4, color: '#334155' }}>
-                          {d.document_type || 'Filing'}
+                          {d.document_type || 'General'}
                         </span>
                       </td>
-                      <td style={{ padding: '12px', fontWeight: 500 }}>{d.firm_name}</td>
+                      <td style={{ padding: '12px', fontWeight: 500 }}>{d.firm_name || 'All Firms'}</td>
+                      <td style={{ padding: '12px', color: '#64748B' }}>{d.department_name || 'General'}</td>
                       <td style={{ padding: '12px' }}>
-                        <div>{d.compliance_name}</div>
-                        <div style={{ fontSize: 11, color: '#64748B' }}>{d.period}</div>
+                        {d.compliance_name ? (
+                          <div>
+                            <div>{d.compliance_name}</div>
+                            <div style={{ fontSize: 11, color: '#64748B' }}>{d.period || '—'}</div>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>Standalone</span>
+                        )}
                       </td>
                       <td style={{ padding: '12px', color: '#64748B' }}>{(d.file_size / 1024).toFixed(1)} KB</td>
                       <td style={{ padding: '12px', color: '#64748B' }}>{d.uploader_name || 'Staff'}</td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <a
-                          href={`/api/documents/${d.id}/download`}
-                          style={{
-                            padding: '5px 12px',
-                            background: '#EFF6FF',
-                            color: '#2563EB',
-                            borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                          }}
-                        >
-                          Download ⬇
-                        </a>
+                        <div style={{ display: 'inline-flex', gap: 6 }}>
+                          <a
+                            href={`/api/documents/${d.id}/download`}
+                            style={{
+                              padding: '4px 10px',
+                              background: '#EFF6FF',
+                              color: '#2563EB',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                            }}
+                          >
+                            Download ⬇
+                          </a>
+                          <button
+                            onClick={() => openRenameModal(d)}
+                            style={{
+                              padding: '4px 8px',
+                              background: '#F8FAFC',
+                              color: '#475569',
+                              border: '1px solid #CBD5E1',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => handleDelete(d)}
+                            style={{
+                              padding: '4px 8px',
+                              background: '#FEE2E2',
+                              color: '#991B1B',
+                              border: 'none',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -248,6 +552,257 @@ export default function DocumentsVaultPage() {
           </div>
         </div>
       </div>
+
+      {/* Upload Standalone Document Modal */}
+      {uploadModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: 500, background: '#FFFFFF', borderRadius: 14, padding: 28, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                Upload Document to Vault
+              </h3>
+              <button
+                onClick={() => setUploadModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', color: '#94A3B8' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadSubmit}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                    Select File *
+                  </label>
+                  <input
+                    type="file"
+                    required={!uploadFile}
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setUploadFile(f);
+                        setUploadFileName(f.name);
+                      }
+                    }}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                  />
+                  {uploadFile && (
+                    <div style={{ fontSize: 11, color: '#2563EB', marginTop: 4, fontWeight: 600 }}>
+                      Selected: {uploadFile.name} ({(uploadFile.size / 1024).toFixed(1)} KB)
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Organization *
+                  </label>
+                  <select
+                    required
+                    value={uploadFirmId}
+                    onChange={e => setUploadFirmId(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                  >
+                    <option value="">Select Organization...</option>
+                    {firms.map(f => (
+                      <option key={f.id} value={f.id}>{f.display_name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Document Type
+                    </label>
+                    <select
+                      value={uploadDocType}
+                      onChange={e => setUploadDocType(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                    >
+                      <option value="Tax Challan / Receipt">Tax Challan / Receipt</option>
+                      <option value="Statutory Return">Statutory Return</option>
+                      <option value="Filing Acknowledgement">Filing Acknowledgement</option>
+                      <option value="Incorporation Certificate">Incorporation Certificate</option>
+                      <option value="PAN / TAN Copy">PAN / TAN Copy</option>
+                      <option value="GST Registration Certificate">GST Registration Certificate</option>
+                      <option value="Audit Report">Audit Report</option>
+                      <option value="Notice / Summon">Notice / Summon</option>
+                      <option value="Contract / Agreement">Contract / Agreement</option>
+                      <option value="General Document">General Document</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Department
+                    </label>
+                    <select
+                      value={uploadDeptId}
+                      onChange={e => setUploadDeptId(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                    >
+                      <option value="">General / All</option>
+                      {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
+                <button
+                  type="button"
+                  onClick={() => setUploadModalOpen(false)}
+                  style={{ background: '#F1F5F9', color: '#475569', padding: '9px 16px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploading || !uploadFile}
+                  style={{
+                    background: '#2563EB',
+                    color: '#FFF',
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: uploading || !uploadFile ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {uploading ? 'Uploading...' : 'Upload File'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Document Modal */}
+      {renameModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: 440, background: '#FFFFFF', borderRadius: 14, padding: 28, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                Rename Document
+              </h3>
+              <button
+                onClick={() => setRenameModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', color: '#94A3B8' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRenameSubmit}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    File Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={renameFileName}
+                    onChange={e => setRenameFileName(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Document Type
+                  </label>
+                  <select
+                    value={renameDocType}
+                    onChange={e => setRenameDocType(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                  >
+                    <option value="Tax Challan / Receipt">Tax Challan / Receipt</option>
+                    <option value="Statutory Return">Statutory Return</option>
+                    <option value="Filing Acknowledgement">Filing Acknowledgement</option>
+                    <option value="Incorporation Certificate">Incorporation Certificate</option>
+                    <option value="PAN / TAN Copy">PAN / TAN Copy</option>
+                    <option value="GST Registration Certificate">GST Registration Certificate</option>
+                    <option value="Audit Report">Audit Report</option>
+                    <option value="Notice / Summon">Notice / Summon</option>
+                    <option value="Contract / Agreement">Contract / Agreement</option>
+                    <option value="General Document">General Document</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Department
+                  </label>
+                  <select
+                    value={renameDeptId}
+                    onChange={e => setRenameDeptId(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                  >
+                    <option value="">General / All</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
+                <button
+                  type="button"
+                  onClick={() => setRenameModalOpen(false)}
+                  style={{ background: '#F1F5F9', color: '#475569', padding: '9px 16px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={renaming || !renameFileName.trim()}
+                  style={{
+                    background: '#2563EB',
+                    color: '#FFF',
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: renaming || !renameFileName.trim() ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {renaming ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

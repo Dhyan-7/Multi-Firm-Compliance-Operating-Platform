@@ -464,7 +464,18 @@ function ensureAdminUser(db: any) {
   }
 }
 
+function runMigrations(db: any) {
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_type TEXT DEFAULT 'compliance'"); } catch {}
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_name TEXT"); } catch {}
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_description TEXT"); } catch {}
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN manual_priority_override INTEGER DEFAULT 0"); } catch {}
+  try { db.exec("ALTER TABLE documents ADD COLUMN department_id TEXT"); } catch {}
+  try { db.exec("ALTER TABLE comments ADD COLUMN attachment_url TEXT"); } catch {}
+  try { db.exec("ALTER TABLE comments ADD COLUMN attachment_name TEXT"); } catch {}
+}
+
 function initializeSchema(db: any) {
+  runMigrations(db);
   const initialized = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='organizations'").get();
   if (initialized) {
     ensureAdminUser(db);
@@ -673,6 +684,10 @@ function initializeSchema(db: any) {
     CREATE TABLE IF NOT EXISTS compliance_tasks (
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
       task_number TEXT UNIQUE,
+      task_type TEXT DEFAULT 'compliance',
+      task_name TEXT,
+      task_description TEXT,
+      manual_priority_override INTEGER DEFAULT 0,
       firm_id TEXT REFERENCES firms(id),
       compliance_id TEXT REFERENCES compliances(id),
       firm_compliance_id TEXT REFERENCES firm_compliances(id),
@@ -721,6 +736,7 @@ function initializeSchema(db: any) {
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
       firm_id TEXT REFERENCES firms(id),
       task_id TEXT REFERENCES compliance_tasks(id),
+      department_id TEXT REFERENCES departments(id),
       compliance_id TEXT,
       financial_year TEXT,
       period TEXT,
@@ -753,6 +769,8 @@ function initializeSchema(db: any) {
       task_id TEXT REFERENCES compliance_tasks(id),
       user_id TEXT REFERENCES users(id),
       comment TEXT NOT NULL,
+      attachment_url TEXT,
+      attachment_name TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -854,6 +872,15 @@ function initializeSchema(db: any) {
       firm_name TEXT
     );
   `);
+
+  // Safe migrations for existing SQLite databases
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_type TEXT DEFAULT 'compliance'"); } catch {}
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_name TEXT"); } catch {}
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_description TEXT"); } catch {}
+  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN manual_priority_override INTEGER DEFAULT 0"); } catch {}
+  try { db.exec("ALTER TABLE documents ADD COLUMN department_id TEXT"); } catch {}
+  try { db.exec("ALTER TABLE comments ADD COLUMN attachment_url TEXT"); } catch {}
+  try { db.exec("ALTER TABLE comments ADD COLUMN attachment_name TEXT"); } catch {}
   
   seedData(db);
 }

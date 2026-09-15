@@ -12,11 +12,31 @@ export default function TasksPage() {
   const [search, setSearch] = useState('');
   const [firmFilter, setFirmFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [taskTypeFilter, setTaskTypeFilter] = useState('all'); // all, statutory, custom
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [dueDateFrom, setDueDateFrom] = useState('');
+  const [dueDateTo, setDueDateTo] = useState('');
 
   // Metadata for filters
   const [firmsList, setFirmsList] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [departmentsList, setDepartmentsList] = useState<any[]>([]);
+
+  // Create Custom Task Modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    firm_id: '',
+    task_name: '',
+    task_description: '',
+    department_id: '',
+    assignee_id: '',
+    priority: 'medium',
+    due_date: new Date().toISOString().split('T')[0],
+    status: 'pending',
+  });
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   // Selection & Bulk Actions
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -39,6 +59,11 @@ export default function TasksPage() {
 
       if (firmFilter !== 'all') query.set('firm_id', firmFilter);
       if (priorityFilter !== 'all') query.set('priority', priorityFilter);
+      if (taskTypeFilter !== 'all') query.set('task_type', taskTypeFilter);
+      if (departmentFilter !== 'all') query.set('department_id', departmentFilter);
+      if (assigneeFilter !== 'all') query.set('assignee_id', assigneeFilter);
+      if (dueDateFrom) query.set('due_date_from', dueDateFrom);
+      if (dueDateTo) query.set('due_date_to', dueDateTo);
       if (search) query.set('search', search);
 
       const res = await fetch(`/api/tasks?${query.toString()}`, {
@@ -57,13 +82,18 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, [token, activeTab, firmFilter, priorityFilter, search]);
+  }, [token, activeTab, firmFilter, priorityFilter, taskTypeFilter, departmentFilter, assigneeFilter, dueDateFrom, dueDateTo, search]);
 
   useEffect(() => {
     if (!token) return;
     fetch('/api/firms', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
-      .then(d => setFirmsList(d.firms || []))
+      .then(d => {
+        setFirmsList(d.firms || []);
+        if (d.firms?.length > 0 && !createForm.firm_id) {
+          setCreateForm(prev => ({ ...prev, firm_id: d.firms[0].id }));
+        }
+      })
       .catch(console.error);
 
     fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } })
@@ -76,6 +106,93 @@ export default function TasksPage() {
       .then(d => setDepartmentsList(d.departments || []))
       .catch(console.error);
   }, [token]);
+
+  // Handle Create Custom Task
+  const handleCreateCustomTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.task_name.trim()) {
+      setCreateError('Task name is required.');
+      return;
+    }
+    if (!createForm.firm_id) {
+      setCreateError('Please select a firm.');
+      return;
+    }
+    if (!createForm.due_date) {
+      setCreateError('Due date is required.');
+      return;
+    }
+
+    setCreateSubmitting(true);
+    setCreateError('');
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          task_type: 'custom',
+          task_name: createForm.task_name.trim(),
+          task_description: createForm.task_description.trim(),
+          firm_id: createForm.firm_id,
+          department_id: createForm.department_id || undefined,
+          assignee_id: createForm.assignee_id || undefined,
+          priority: createForm.priority,
+          due_date: createForm.due_date,
+          status: createForm.status,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error || 'Failed to create task');
+      } else {
+        setActionNotice(`Task "${createForm.task_name}" created successfully!`);
+        setShowCreateModal(false);
+        setCreateForm({
+          firm_id: firmsList[0]?.id || '',
+          task_name: '',
+          task_description: '',
+          department_id: '',
+          assignee_id: '',
+          priority: 'medium',
+          due_date: new Date().toISOString().split('T')[0],
+          status: 'pending',
+        });
+        fetchTasks();
+      }
+    } catch (err: any) {
+      setCreateError(err.message || 'Error creating task');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
+  // Quick Priority Change
+  const handleUpdatePriority = async (taskId: string, newPriority: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'update_priority',
+          priority: newPriority,
+        }),
+      });
+      if (res.ok) {
+        setTasks(prev =>
+          prev.map(t => (t.id === taskId ? { ...t, priority: newPriority } : t))
+        );
+      }
+    } catch (err) {
+      console.error('Priority update error:', err);
+    }
+  };
 
   // Handle Select All
   const handleSelectAll = (checked: boolean) => {
@@ -150,17 +267,44 @@ export default function TasksPage() {
           border: '1px solid #E2E8F0',
           padding: '18px 24px',
           marginBottom: 20,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
         }}
       >
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-          Compliance Tasks & Filings Workspace
-        </h2>
-        <p style={{ fontSize: 13, color: '#64748B', margin: '4px 0 0' }}>
-          Monitor statutory deliverables, assign responsibility, track execution stages, and execute bulk operations.
-        </p>
+        <div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+            Compliance Tasks & Filings Workspace
+          </h2>
+          <p style={{ fontSize: 13, color: '#64748B', margin: '4px 0 0' }}>
+            Monitor statutory deliverables, assign responsibility, track execution stages, and execute bulk operations.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowCreateModal(true)}
+          style={{
+            background: '#2563EB',
+            color: '#FFFFFF',
+            padding: '9px 18px',
+            borderRadius: 8,
+            border: 'none',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+          }}
+        >
+          <span>+</span> Create Custom Task
+        </button>
 
         {actionNotice && (
-          <div style={{ marginTop: 12, padding: '8px 14px', background: '#ECFDF5', color: '#065F46', borderRadius: 8, fontSize: 13, border: '1px solid #A7F3D0' }}>
+          <div style={{ width: '100%', marginTop: 8, padding: '8px 14px', background: '#ECFDF5', color: '#065F46', borderRadius: 8, fontSize: 13, border: '1px solid #A7F3D0' }}>
             ✓ {actionNotice}
           </div>
         )}
@@ -199,19 +343,19 @@ export default function TasksPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           type="text"
           placeholder="Search task, firm, or statutory code..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 240, padding: '9px 14px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
+          style={{ flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
         />
 
         <select
           value={firmFilter}
           onChange={e => setFirmFilter(e.target.value)}
-          style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
         >
           <option value="all">All Firms</option>
           {firmsList.map(f => (
@@ -220,15 +364,78 @@ export default function TasksPage() {
         </select>
 
         <select
+          value={taskTypeFilter}
+          onChange={e => setTaskTypeFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+        >
+          <option value="all">All Task Types</option>
+          <option value="statutory">Statutory Compliance</option>
+          <option value="custom">Custom Tasks</option>
+        </select>
+
+        <select
+          value={departmentFilter}
+          onChange={e => setDepartmentFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+        >
+          <option value="all">All Departments</option>
+          {departmentsList.map(d => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={assigneeFilter}
+          onChange={e => setAssigneeFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+        >
+          <option value="all">All Assignees</option>
+          {usersList.map(u => (
+            <option key={u.id} value={u.id}>
+              {u.name} {u.department_name ? `(${u.department_name})` : ''}
+            </option>
+          ))}
+        </select>
+
+        <select
           value={priorityFilter}
           onChange={e => setPriorityFilter(e.target.value)}
-          style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
         >
           <option value="all">All Priorities</option>
+          <option value="critical">Critical</option>
           <option value="high">High Priority</option>
           <option value="medium">Medium</option>
           <option value="low">Low</option>
         </select>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 12, color: '#64748B' }}>Due:</span>
+          <input
+            type="date"
+            value={dueDateFrom}
+            onChange={e => setDueDateFrom(e.target.value)}
+            title="Due Date From"
+            style={{ padding: '7px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: 12 }}
+          />
+          <span style={{ fontSize: 12, color: '#64748B' }}>to</span>
+          <input
+            type="date"
+            value={dueDateTo}
+            onChange={e => setDueDateTo(e.target.value)}
+            title="Due Date To"
+            style={{ padding: '7px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: 12 }}
+          />
+          {(dueDateFrom || dueDateTo) && (
+            <button
+              onClick={() => { setDueDateFrom(''); setDueDateTo(''); }}
+              style={{ background: 'transparent', border: 'none', color: '#DC2626', fontSize: 12, cursor: 'pointer', padding: '4px 6px' }}
+              title="Clear date filter"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Bulk Operations Floating Bar */}
@@ -304,7 +511,7 @@ export default function TasksPage() {
                   />
                 </th>
                 <th style={{ padding: '12px' }}>Organization</th>
-                <th style={{ padding: '12px' }}>Statutory Compliance</th>
+                <th style={{ padding: '12px' }}>Task / Compliance Item</th>
                 <th style={{ padding: '12px' }}>Period</th>
                 <th style={{ padding: '12px' }}>Due Date</th>
                 <th style={{ padding: '12px' }}>Assignee</th>
@@ -317,6 +524,7 @@ export default function TasksPage() {
               {tasks.map(t => {
                 const isOverdue = t.status === 'overdue';
                 const isSelected = selectedTaskIds.includes(t.id);
+                const isCustom = t.task_type === 'custom';
                 return (
                   <tr
                     key={t.id}
@@ -336,27 +544,76 @@ export default function TasksPage() {
                       {t.firm_name}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      <div style={{ fontWeight: 600, color: '#0F172A' }}>{t.compliance_name}</div>
-                      <div style={{ fontSize: 11, color: '#64748B' }}>Code: {t.compliance_code}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        {isCustom ? (
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: '#EDE9FE', color: '#6D28D9' }}>
+                            CUSTOM
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: '#E0F2FE', color: '#0369A1' }}>
+                            STATUTORY
+                          </span>
+                        )}
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                          {isCustom ? (t.task_name || 'Untitled Custom Task') : t.compliance_name}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#64748B' }}>
+                        {isCustom ? (
+                          t.task_description ? (t.task_description.length > 50 ? t.task_description.substring(0, 50) + '...' : t.task_description) : 'Non-statutory task'
+                        ) : (
+                          <>Code: {t.compliance_code || 'N/A'} {t.category_name ? `• ${t.category_name}` : ''}</>
+                        )}
+                      </div>
                     </td>
-                    <td style={{ padding: '12px', color: '#475569' }}>{t.period}</td>
+                    <td style={{ padding: '12px', color: '#475569' }}>{t.period || '—'}</td>
                     <td style={{ padding: '12px', fontWeight: 600, color: isOverdue ? '#DC2626' : '#0F172A' }}>
                       {t.due_date} {isOverdue && '⚠️'}
                     </td>
                     <td style={{ padding: '12px', color: '#475569' }}>
-                      {t.assignee_name || <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>Unassigned</span>}
+                      {t.assignee_name ? (
+                        <div>
+                          <div>{t.assignee_name}</div>
+                          {t.department_name && <div style={{ fontSize: 10, color: '#94A3B8' }}>({t.department_name})</div>}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>Unassigned</span>
+                      )}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      <span
+                      <select
+                        value={t.priority || 'medium'}
+                        onChange={e => handleUpdatePriority(t.id, e.target.value)}
                         style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          textTransform: 'capitalize',
-                          color: t.priority === 'high' ? '#DC2626' : t.priority === 'medium' ? '#2563EB' : '#64748B',
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          border: '1px solid #CBD5E1',
+                          background:
+                            t.priority === 'critical'
+                              ? '#FEE2E2'
+                              : t.priority === 'high'
+                              ? '#FFEDD5'
+                              : t.priority === 'medium'
+                              ? '#EFF6FF'
+                              : '#F8FAFC',
+                          color:
+                            t.priority === 'critical'
+                              ? '#991B1B'
+                              : t.priority === 'high'
+                              ? '#C2410C'
+                              : t.priority === 'medium'
+                              ? '#1D4ED8'
+                              : '#475569',
+                          cursor: 'pointer',
                         }}
                       >
-                        {t.priority}
-                      </span>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                      </select>
                     </td>
                     <td style={{ padding: '12px' }}>
                       <span
@@ -409,6 +666,211 @@ export default function TasksPage() {
           </table>
         )}
       </div>
+
+      {/* Create Custom Task Modal */}
+      {showCreateModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 540,
+              background: '#FFFFFF',
+              borderRadius: 14,
+              padding: 28,
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              border: '1px solid #E2E8F0',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                Create Custom Task
+              </h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', color: '#94A3B8' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {createError && (
+              <div style={{ marginBottom: 16, padding: '10px 14px', background: '#FEE2E2', color: '#991B1B', borderRadius: 8, fontSize: 13, border: '1px solid #FCA5A5' }}>
+                {createError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateCustomTask}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Task Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Internal Audit Reconciliation Q3"
+                    value={createForm.task_name}
+                    onChange={e => setCreateForm({ ...createForm, task_name: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Description / Scope
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Brief description of task deliverables and expectations..."
+                    value={createForm.task_description}
+                    onChange={e => setCreateForm({ ...createForm, task_description: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Firm *
+                  </label>
+                  <select
+                    required
+                    value={createForm.firm_id}
+                    onChange={e => setCreateForm({ ...createForm, firm_id: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                  >
+                    <option value="">Select Firm...</option>
+                    {firmsList.map(f => (
+                      <option key={f.id} value={f.id}>{f.display_name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Department
+                    </label>
+                    <select
+                      value={createForm.department_id}
+                      onChange={e => setCreateForm({ ...createForm, department_id: e.target.value, assignee_id: '' })}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                    >
+                      <option value="">All / Any Department</option>
+                      {departmentsList.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Assignee User
+                    </label>
+                    <select
+                      value={createForm.assignee_id}
+                      onChange={e => setCreateForm({ ...createForm, assignee_id: e.target.value })}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                    >
+                      <option value="">Unassigned</option>
+                      {usersList
+                        .filter(u => !createForm.department_id || u.department_id === createForm.department_id)
+                        .map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.name} {u.department_name ? `(${u.department_name})` : ''}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Priority
+                    </label>
+                    <select
+                      value={createForm.priority}
+                      onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Due Date *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={createForm.due_date}
+                      onChange={e => setCreateForm({ ...createForm, due_date: e.target.value })}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Initial Status
+                  </label>
+                  <select
+                    value={createForm.status}
+                    onChange={e => setCreateForm({ ...createForm, status: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  style={{ background: '#F1F5F9', color: '#475569', padding: '9px 16px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createSubmitting}
+                  style={{
+                    background: '#2563EB',
+                    color: '#FFF',
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: createSubmitting ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {createSubmitting ? 'Creating...' : 'Create Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Bulk Action Modals */}
       {bulkModal && (

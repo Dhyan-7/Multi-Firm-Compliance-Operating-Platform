@@ -155,7 +155,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {group.items.map((item) => {
-                const isActive = pathname === item.path || pathname.startsWith(item.path + '/');
+                const isActive = pathname === item.path || pathname.startsWith(item.path + '/') || (item.path === '/users/departments' && (pathname === '/departments' || pathname.startsWith('/departments/')));
                 return (
                   <a
                     key={item.path}

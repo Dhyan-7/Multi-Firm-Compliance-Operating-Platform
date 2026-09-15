@@ -163,3 +163,56 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // RBAC check: only Admin and Super Admin can permanently remove a firm (Section 2.3)
+    const isAdmin = user.role_name === 'Super Admin' || user.role_name === 'Admin' || user.role_id === 'role_01' || user.role_id === 'role_02';
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can delete a firm' }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const db = getDb();
+
+    const firm = db.prepare("SELECT * FROM firms WHERE id = ?").get(id) as any;
+    if (!firm) return NextResponse.json({ error: 'Firm not found' }, { status: 404 });
+
+    const istTimestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
+
+    // Soft delete the firm
+    db.prepare("UPDATE firms SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+
+    // Cancel pending/open tasks associated with this firm
+    db.prepare(`
+      UPDATE compliance_tasks
+      SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+      WHERE firm_id = ? AND status NOT IN ('completed', 'cancelled')
+    `).run(id);
+
+    // Disable firm compliances
+    db.prepare("UPDATE firm_compliances SET status = 'inactive', enabled = 0, updated_at = CURRENT_TIMESTAMP WHERE firm_id = ?").run(id);
+
+    // Record audit log
+    db.prepare(`
+      INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, old_data, new_data)
+      VALUES (?, ?, ?, 'FIRM_DELETED', 'firm', ?, ?, ?, ?)
+    `).run(
+      user.organization_id,
+      user.id,
+      user.name,
+      id,
+      firm.display_name || firm.legal_name,
+      JSON.stringify({ status: firm.status, legal_name: firm.legal_name, display_name: firm.display_name }),
+      JSON.stringify({ status: 'deleted', deleted_by: user.name, timestamp_ist: istTimestamp })
+    );
+
+    return NextResponse.json({ message: 'Firm deleted permanently from active operations', firm_id: id });
+  } catch (error) {
+    console.error('Firm delete error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

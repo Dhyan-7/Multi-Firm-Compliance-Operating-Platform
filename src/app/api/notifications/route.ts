@@ -7,10 +7,18 @@ export async function GET(request: Request) {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const db = getDb();
-    const notifications = db.prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50").all(user.id);
-    const unread = (db.prepare("SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND read_at IS NULL").get(user.id) as any).c;
-    return NextResponse.json({ notifications, unread });
+    const notifications = db.prepare(`
+      SELECT *, CASE WHEN read_at IS NOT NULL THEN 1 ELSE 0 END as is_read 
+      FROM notifications 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC 
+      LIMIT 100
+    `).all(user.id);
+    const unreadRow = db.prepare("SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND read_at IS NULL").get(user.id) as any;
+    const unreadCount = unreadRow ? unreadRow.c : 0;
+    return NextResponse.json({ notifications, unreadCount, unread: unreadCount });
   } catch (error) {
+    console.error('Notifications fetch error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -26,8 +34,11 @@ export async function PUT(request: Request) {
     } else if (data.id) {
       db.prepare("UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?").run(data.id, user.id);
     }
-    return NextResponse.json({ message: 'Updated' });
+    const unreadRow = db.prepare("SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND read_at IS NULL").get(user.id) as any;
+    const unreadCount = unreadRow ? unreadRow.c : 0;
+    return NextResponse.json({ message: 'Updated', unreadCount });
   } catch (error) {
+    console.error('Notifications update error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
