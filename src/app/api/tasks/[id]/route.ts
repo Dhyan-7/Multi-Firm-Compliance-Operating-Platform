@@ -234,6 +234,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         WHERE id = ?
       `).run(oldDate, data.due_date, reason, id);
 
+      if (currentTask.assignee_id && currentTask.assignee_id !== user.id) {
+        db.prepare(`
+          INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
+          VALUES (?, 'task_rescheduled', 'Task Due Date Rescheduled', ?, 'task', ?)
+        `).run(
+          currentTask.assignee_id,
+          `${currentTask.cn} for ${currentTask.fn} due date moved from ${oldDate} to ${data.due_date}. Reason: ${reason}`,
+          id
+        );
+      }
+
       db.prepare(`
         INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, old_data, new_data)
         VALUES (?, ?, ?, 'TASK_DATE_CHANGED', 'task', ?, ?, ?, ?)
@@ -272,6 +283,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         INSERT INTO comments (task_id, user_id, comment, attachment_url, attachment_name)
         VALUES (?, ?, ?, ?, ?)
       `).run(id, user.id, commentText || 'Uploaded attachment', data.attachment_url || null, data.attachment_name || null);
+
+      // Notify other task stakeholders (assignee / reviewer, excluding comment author)
+      const targetUserIds = new Set<string>();
+      if (currentTask.assignee_id && currentTask.assignee_id !== user.id) {
+        targetUserIds.add(currentTask.assignee_id);
+      }
+      if (currentTask.reviewer_id && currentTask.reviewer_id !== user.id) {
+        targetUserIds.add(currentTask.reviewer_id);
+      }
+
+      const notifStmt = db.prepare(`
+        INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
+        VALUES (?, 'task_comment', 'New Comment on Task', ?, 'task', ?)
+      `);
+
+      const preview = commentText ? (commentText.length > 60 ? commentText.substring(0, 57) + '...' : commentText) : 'Added an attachment';
+      for (const targetId of targetUserIds) {
+        notifStmt.run(
+          targetId,
+          `${user.name} commented on "${currentTask.cn}" (${currentTask.fn}): "${preview}"`,
+          id
+        );
+      }
 
       db.prepare(`
         INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, new_data)

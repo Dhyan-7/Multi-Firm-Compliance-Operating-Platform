@@ -1,5 +1,4 @@
 'use client';
-import Link from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AppLayout';
 

@@ -158,7 +158,7 @@ export function generateFirmComplianceCalendar(options: GenerateCalendarOptions)
       }
     } else if (freq === 'half_yearly') {
       for (const h of halfYears) {
-        let dueDay = customDueDay || 30;
+        const dueDay = customDueDay || 30;
         const formattedMonth = h.dueMonth.toString().padStart(2, '0');
         const formattedDay = dueDay.toString().padStart(2, '0');
         const dueDate = `${h.dueYear}-${formattedMonth}-${formattedDay}`;

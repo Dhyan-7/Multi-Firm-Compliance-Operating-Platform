@@ -100,6 +100,7 @@ export default function NotificationsPage() {
     if (type?.includes('rejected') || type?.includes('changes')) return '🔄';
     if (type?.includes('assigned')) return '📋';
     if (type?.includes('rescheduled')) return '📅';
+    if (type?.includes('comment')) return '💬';
     return '🔔';
   };
 

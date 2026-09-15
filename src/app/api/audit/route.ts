@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
     const total = (db.prepare(`SELECT COUNT(*) as c FROM audit_logs a WHERE ${where}`).get(...params) as any).c;
     const logs = db.prepare(`SELECT * FROM audit_logs a WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, limit, (page - 1) * limit);
-    return NextResponse.json({ logs, total, page, limit });
+    return NextResponse.json({ logs, auditLogs: logs, total, page, limit });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

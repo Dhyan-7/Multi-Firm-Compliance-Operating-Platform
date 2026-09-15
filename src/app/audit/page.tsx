@@ -19,7 +19,7 @@ export default function AuditLogsPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setLogs(data.auditLogs || []);
+        setLogs(data.auditLogs || data.logs || []);
       }
     } catch (err) {
       console.error('Fetch audit logs error:', err);

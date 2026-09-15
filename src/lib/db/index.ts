@@ -281,7 +281,7 @@ function createInMemoryStore(dbPath: string) {
               return {
                 ...t,
                 firm_name: firm?.display_name || firm?.legal_name || 'Firm',
-                compliance_name: comp?.name || 'Compliance',
+                compliance_name: t.task_name || comp?.name || 'Task',
                 compliance_code: comp?.code || '',
                 category_name: cat?.name || 'General',
                 category_color: cat?.color || '#3B82F6',
@@ -377,7 +377,7 @@ function createInMemoryStore(dbPath: string) {
 
     exec(sql: string) {},
     pragma(sql: string) {},
-    transaction(fn: Function) {
+    transaction(fn: (...args: any[]) => any) {
       return (...args: any[]) => fn(...args);
     }
   };
@@ -470,6 +470,9 @@ function runMigrations(db: any) {
   try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_description TEXT"); } catch {}
   try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN manual_priority_override INTEGER DEFAULT 0"); } catch {}
   try { db.exec("ALTER TABLE documents ADD COLUMN department_id TEXT"); } catch {}
+  try { db.exec("ALTER TABLE documents ADD COLUMN updated_at DATETIME"); } catch {}
+  try { db.exec("ALTER TABLE compliance_categories ADD COLUMN updated_at DATETIME"); } catch {}
+  try { db.exec("ALTER TABLE departments ADD COLUMN updated_at DATETIME"); } catch {}
   try { db.exec("ALTER TABLE comments ADD COLUMN attachment_url TEXT"); } catch {}
   try { db.exec("ALTER TABLE comments ADD COLUMN attachment_name TEXT"); } catch {}
 }
@@ -508,7 +511,8 @@ function initializeSchema(db: any) {
       name TEXT NOT NULL,
       head_user_id TEXT,
       status TEXT DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS roles (
@@ -618,7 +622,8 @@ function initializeSchema(db: any) {
       icon TEXT DEFAULT '📋',
       sort_order INTEGER DEFAULT 0,
       status TEXT DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS compliances (
@@ -750,7 +755,8 @@ function initializeSchema(db: any) {
       uploaded_by TEXT REFERENCES users(id),
       status TEXT DEFAULT 'active',
       version INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS document_versions (
@@ -873,15 +879,7 @@ function initializeSchema(db: any) {
     );
   `);
 
-  // Safe migrations for existing SQLite databases
-  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_type TEXT DEFAULT 'compliance'"); } catch {}
-  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_name TEXT"); } catch {}
-  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN task_description TEXT"); } catch {}
-  try { db.exec("ALTER TABLE compliance_tasks ADD COLUMN manual_priority_override INTEGER DEFAULT 0"); } catch {}
-  try { db.exec("ALTER TABLE documents ADD COLUMN department_id TEXT"); } catch {}
-  try { db.exec("ALTER TABLE comments ADD COLUMN attachment_url TEXT"); } catch {}
-  try { db.exec("ALTER TABLE comments ADD COLUMN attachment_name TEXT"); } catch {}
-  
+  runMigrations(db);
   seedData(db);
 }
 

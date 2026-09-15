@@ -4,7 +4,7 @@ import { useAuth } from '@/components/layout/AppLayout';
 
 export default function TaskWorkspacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');

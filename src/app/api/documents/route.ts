@@ -234,6 +234,19 @@ export async function DELETE(request: Request) {
 
     db.prepare("UPDATE documents SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
 
+    // Optional physical file clean-up if saved locally
+    try {
+      const relPath = current.file_path || current.storage_path;
+      if (relPath && typeof relPath === 'string' && relPath.startsWith('/uploads/')) {
+        const fullLocalPath = path.join(process.cwd(), 'public', relPath.replace(/^\//, ''));
+        if (fs.existsSync(fullLocalPath)) {
+          fs.unlinkSync(fullLocalPath);
+        }
+      }
+    } catch (cleanErr) {
+      console.warn('Physical file deletion warning:', cleanErr);
+    }
+
     const istTimestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
     db.prepare(`
       INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, new_data)

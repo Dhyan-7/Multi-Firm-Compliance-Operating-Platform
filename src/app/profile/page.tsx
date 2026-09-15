@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/layout/AppLayout';
 
 export default function ProfileSettingsPage() {
-  const { token, user: authUser } = useAuth();
+  const { token } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [activity, setActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
