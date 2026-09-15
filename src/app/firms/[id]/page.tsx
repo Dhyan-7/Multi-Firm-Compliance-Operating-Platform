@@ -2,6 +2,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/layout/AppLayout';
+import { formatISTDateTime } from '@/lib/dateUtils';
 
 export default function FirmDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -791,7 +792,7 @@ export default function FirmDetailPage({ params }: { params: Promise<{ id: strin
                   </div>
                   <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>{a.entity_name}</div>
                   <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>
-                    {new Date(a.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                    {formatISTDateTime(a.created_at)}
                   </div>
                 </div>
               </div>

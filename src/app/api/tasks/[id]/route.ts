@@ -273,7 +273,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'MIS saved' });
     }
 
-    if (data.action === 'add_comment') {
+    if (data.action === 'add_comment' || data.action === 'comment') {
       const commentText = (data.comment || '').trim();
       if (!commentText && !data.attachment_url) {
         return NextResponse.json({ error: 'Comment text or attachment is required' }, { status: 400 });
@@ -367,3 +367,5 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = PUT;

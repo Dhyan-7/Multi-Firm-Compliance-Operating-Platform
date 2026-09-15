@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './layout/AppLayout';
+import { formatISTShort } from '@/lib/dateUtils';
 
 export default function NotificationBell() {
   const { token, unreadCount, setUnreadCount } = useAuth();
@@ -250,13 +251,7 @@ export default function NotificationBell() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
                       <span style={{ fontSize: 10, color: '#94A3B8' }}>
-                        {new Date(n.created_at).toLocaleDateString('en-IN', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          timeZone: 'Asia/Kolkata',
-                        })} IST
+                        {formatISTShort(n.created_at)}
                       </span>
                       {n.entity_id && (
                         <span style={{ fontSize: 11, color: '#2563EB', fontWeight: 600 }}>

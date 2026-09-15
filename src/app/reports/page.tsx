@@ -61,7 +61,7 @@ export default function ReportsPage() {
 
   const handleDownload = (format: 'xlsx' | 'pdf' | 'csv') => {
     if (!token) return;
-    const url = `/api/reports/export?format=${format}&type=${reportType}&firm_id=${firmFilter}`;
+    const url = `/api/reports/export?format=${format}&type=${reportType}&firm_id=${firmFilter}&token=${encodeURIComponent(token)}`;
     window.open(url, '_blank');
   };
 

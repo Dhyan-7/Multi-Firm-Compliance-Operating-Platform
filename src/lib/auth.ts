@@ -122,6 +122,15 @@ export function getUserFromRequest(request: Request): AuthUser | null {
     }
   }
 
+  // Fallback for direct browser downloads / exports
+  if (!token) {
+    try {
+      const url = new URL(request.url);
+      const queryToken = url.searchParams.get('token');
+      if (queryToken) token = queryToken;
+    } catch {}
+  }
+
   if (!token) return null;
   const decoded = verifyToken(token);
   if (!decoded || !decoded.id) return null;

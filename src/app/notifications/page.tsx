@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/layout/AppLayout';
+import { formatISTDateTime } from '@/lib/dateUtils';
 
 export default function NotificationsPage() {
   const { token, unreadCount, setUnreadCount } = useAuth();
@@ -277,11 +278,7 @@ export default function NotificationsPage() {
                     <div style={{ fontSize: 13, color: '#475569', marginTop: 3, lineHeight: 1.4 }}>{n.message}</div>
                     <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>
-                        {new Date(n.created_at).toLocaleString('en-IN', {
-                          timeZone: 'Asia/Kolkata',
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })} IST
+                        {formatISTDateTime(n.created_at, { dateStyle: 'medium', timeStyle: 'short' })}
                       </span>
                       {n.entity_type && (
                         <>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, use } from 'react';
 import { useAuth } from '@/components/layout/AppLayout';
+import { formatISTShort } from '@/lib/dateUtils';
 
 export default function TaskWorkspacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -761,7 +762,7 @@ export default function TaskWorkspacePage({ params }: { params: Promise<{ id: st
                   <div key={c.id} style={{ background: '#F8FAFC', padding: 10, borderRadius: 8, border: '1px solid #F1F5F9' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748B', marginBottom: 4 }}>
                       <strong style={{ color: '#0F172A' }}>{c.user_name || 'Staff'}</strong>
-                      <span>{new Date(c.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{formatISTShort(c.created_at)}</span>
                     </div>
                     <div style={{ fontSize: 13, color: '#334155', whiteSpace: 'pre-wrap' }}>{c.comment}</div>
 
@@ -867,7 +868,7 @@ export default function TaskWorkspacePage({ params }: { params: Promise<{ id: st
               {activity.map((a: any) => (
                 <div key={a.id} style={{ fontSize: 12, borderBottom: '1px solid #F1F5F9', paddingBottom: 6 }}>
                   <div style={{ fontWeight: 600, color: '#0F172A' }}>{a.action}</div>
-                  <div style={{ color: '#64748B', marginTop: 2 }}>By: {a.user_name} • {new Date(a.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div style={{ color: '#64748B', marginTop: 2 }}>By: {a.user_name} • {formatISTShort(a.created_at)}</div>
                 </div>
               ))}
             </div>

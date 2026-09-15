@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/layout/AppLayout';
+import { formatISTDateTime } from '@/lib/dateUtils';
 
 export default function AuditLogsPage() {
   const { token } = useAuth();
@@ -151,11 +152,7 @@ export default function AuditLogsPage() {
                   return (
                     <tr key={l.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                       <td style={{ padding: '12px 16px', color: '#64748B', fontSize: 12, whiteSpace: 'nowrap' }}>
-                        {new Date(l.created_at).toLocaleString('en-IN', {
-                          timeZone: 'Asia/Kolkata',
-                          dateStyle: 'medium',
-                          timeStyle: 'medium',
-                        })} IST
+                        {formatISTDateTime(l.created_at)}
                       </td>
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0F172A' }}>
                         {l.user_name || 'System Engine'}
@@ -230,7 +227,7 @@ export default function AuditLogsPage() {
                   Audit Entry Inspection
                 </h3>
                 <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
-                  Action: <strong style={{ color: '#0F172A' }}>{selectedLog.action}</strong> • User: <strong style={{ color: '#0F172A' }}>{selectedLog.user_name || 'System'}</strong> • IST: <strong>{new Date(selectedLog.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</strong>
+                  Action: <strong style={{ color: '#0F172A' }}>{selectedLog.action}</strong> • User: <strong style={{ color: '#0F172A' }}>{selectedLog.user_name || 'System'}</strong> • IST: <strong>{formatISTDateTime(selectedLog.created_at)}</strong>
                 </div>
               </div>
               <button

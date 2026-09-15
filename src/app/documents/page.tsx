@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/layout/AppLayout';
+import { formatISTDate } from '@/lib/dateUtils';
 
 export default function DocumentsVaultPage() {
   const { token } = useAuth();
@@ -472,7 +473,7 @@ export default function DocumentsVaultPage() {
                           <div>
                             <div style={{ fontWeight: 600, color: '#0F172A' }}>{d.file_name}</div>
                             <div style={{ fontSize: 10, color: '#94A3B8' }}>
-                              {new Date(d.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {formatISTDate(d.created_at)}
                             </div>
                           </div>
                         </div>
@@ -499,7 +500,7 @@ export default function DocumentsVaultPage() {
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: 6 }}>
                           <a
-                            href={`/api/documents/${d.id}/download`}
+                            href={`/api/documents/${d.id}/download?token=${encodeURIComponent(token || '')}`}
                             style={{
                               padding: '4px 10px',
                               background: '#EFF6FF',
