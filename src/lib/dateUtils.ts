@@ -35,59 +35,87 @@ export function parseUtcDate(dateInput: string | number | Date | null | undefine
  */
 export function formatISTDateTime(dateInput: any, options?: Intl.DateTimeFormatOptions): string {
   const d = parseUtcDate(dateInput);
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    timeZone: 'Asia/Kolkata',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-    ...options,
-  };
-  return d.toLocaleString('en-IN', defaultOptions);
+  try {
+    // If caller provided dateStyle or timeStyle, Intl forbids combining them with day, month, year, etc.
+    if (options && (options.dateStyle || options.timeStyle)) {
+      return d.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        ...options,
+      });
+    }
+
+    const defaultOptions: Intl.DateTimeFormatOptions = {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      ...options,
+    };
+    return d.toLocaleString('en-IN', defaultOptions);
+  } catch {
+    try {
+      return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    } catch {
+      return d.toISOString();
+    }
+  }
 }
 
 /**
  * Short format for timeline and notifications, e.g. "16 Sep, 03:36 am"
  */
 export function formatISTShort(dateInput: any): string {
-  const d = parseUtcDate(dateInput);
-  return d.toLocaleString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+  try {
+    const d = parseUtcDate(dateInput);
+    return d.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return 'Just now';
+  }
 }
 
 /**
  * Date only in IST, e.g. "16 Sep 2026"
  */
 export function formatISTDate(dateInput: any): string {
-  const d = parseUtcDate(dateInput);
-  return d.toLocaleDateString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  try {
+    const d = parseUtcDate(dateInput);
+    return d.toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return 'N/A';
+  }
 }
 
 /**
  * Time only in IST, e.g. "03:36 am"
  */
 export function formatISTTime(dateInput: any): string {
-  const d = parseUtcDate(dateInput);
-  return d.toLocaleTimeString('en-IN', {
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+  try {
+    const d = parseUtcDate(dateInput);
+    return d.toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return 'N/A';
+  }
 }
 
 /**
