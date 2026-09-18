@@ -113,21 +113,32 @@ async function runAuditVerification() {
   assert(checkPermission(db, superAdmin.id, 'firms', 'delete'), 'Super Admin has unrestricted permissions across all modules');
 
   // --------------------------------------------------------------------------
-  // TEST SUITE 4: DASHBOARD KPI ACCURACY (SQL VS EXPECTED)
+  // TEST SUITE 4: FRESH PRODUCTION BASELINE METRICS & SYSTEM INTACTNESS
   // --------------------------------------------------------------------------
-  console.log('\n[4/7] Testing Dashboard KPI Calculations against Database...');
+  console.log('\n[4/7] Testing Fresh Production Baseline Metrics & System Integrity...');
 
+  const totalFirms = (db.prepare('SELECT count(*) as c FROM firms').get() as any).c;
   const totalTasks = (db.prepare('SELECT count(*) as c FROM compliance_tasks').get() as any).c;
   const completedTasks = (db.prepare("SELECT count(*) as c FROM compliance_tasks WHERE status = 'completed'").get() as any).c;
   const pendingTasks = (db.prepare("SELECT count(*) as c FROM compliance_tasks WHERE status IN ('pending','not_started','assigned')").get() as any).c;
-  const inProgressTasks = (db.prepare("SELECT count(*) as c FROM compliance_tasks WHERE status = 'in_progress'").get() as any).c;
-  const awaitingReviewTasks = (db.prepare("SELECT count(*) as c FROM compliance_tasks WHERE status = 'submitted'").get() as any).c;
   const overdueTasks = (db.prepare("SELECT count(*) as c FROM compliance_tasks WHERE status != 'completed' AND (status = 'overdue' OR due_date < date('now'))").get() as any).c;
-  const missedTasks = (db.prepare("SELECT count(*) as c FROM compliance_tasks WHERE status = 'missed'").get() as any).c;
+  const totalUsers = (db.prepare('SELECT count(*) as c FROM users').get() as any).c;
+  const totalDocuments = (db.prepare('SELECT count(*) as c FROM documents').get() as any).c;
+  const totalCompliances = (db.prepare('SELECT count(*) as c FROM compliances').get() as any).c;
+  const totalDepartments = (db.prepare('SELECT count(*) as c FROM departments').get() as any).c;
+  const totalNotifications = (db.prepare('SELECT count(*) as c FROM notifications').get() as any).c;
+  const totalAuditLogs = (db.prepare('SELECT count(*) as c FROM audit_logs').get() as any).c;
 
-  assert(totalTasks > 0, `Total tasks exist in system: ${totalTasks}`);
-  assert(totalTasks >= (completedTasks + pendingTasks + inProgressTasks + awaitingReviewTasks), 'Total tasks matches sum of status buckets');
-  console.log(`    Breakdown: Total=${totalTasks}, Completed=${completedTasks}, Pending=${pendingTasks}, InProgress=${inProgressTasks}, AwaitingReview=${awaitingReviewTasks}, Overdue=${overdueTasks}, Missed=${missedTasks}`);
+  assert(totalFirms === 0, `Fresh baseline: Total firms is 0 (found: ${totalFirms})`);
+  assert(totalTasks === 0, `Fresh baseline: Total tasks is 0 (found: ${totalTasks})`);
+  assert(completedTasks === 0 && pendingTasks === 0 && overdueTasks === 0, 'Fresh baseline: Task status buckets are all 0');
+  assert(totalUsers === 1, `Fresh baseline: Exactly 1 primary Super Admin exists (found: ${totalUsers})`);
+  assert(totalDocuments === 0, `Fresh baseline: Document vault is clean with 0 test documents (found: ${totalDocuments})`);
+  assert(totalNotifications === 0, `Fresh baseline: Notifications table is clean with 0 records (found: ${totalNotifications})`);
+  assert(totalAuditLogs === 0, `Fresh baseline: Audit log is clean with 0 records (found: ${totalAuditLogs})`);
+  assert(totalCompliances === 50, `Master Compliance Library: Exactly 50 official statutory compliance templates preserved (found: ${totalCompliances})`);
+  assert(totalDepartments === 8, `System Departments: Exactly 8 standard departments preserved (found: ${totalDepartments})`);
+  console.log(`    State: Firms=${totalFirms}, Tasks=${totalTasks}, Users=${totalUsers}, Compliances=${totalCompliances}, Depts=${totalDepartments}`);
 
   // --------------------------------------------------------------------------
   // TEST SUITE 5: IST TIMEZONE & DATE UTILITIES
