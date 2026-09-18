@@ -48,7 +48,7 @@ export function evaluateApplicability(profile: FirmProfile): ApplicableRule[] {
 
   for (const comp of allCompliances) {
     let applicable = false;
-    let mandatory = true;
+    const mandatory = true;
     let reason = '';
     const cat = (comp.category_name || '').toUpperCase();
     const code = (comp.code || '').toUpperCase();

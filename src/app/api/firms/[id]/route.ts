@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, isAdminOrSuperAdmin } from '@/lib/auth';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -94,6 +94,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can modify firm details' }, { status: 403 });
+    }
 
     const { id } = await params;
     const body = await request.json();
@@ -165,9 +168,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // RBAC check: only Admin and Super Admin can permanently remove a firm (Section 2.3)
-    const isAdmin = user.role_name === 'Super Admin' || user.role_name === 'Admin' || user.role_id === 'role_01' || user.role_id === 'role_02';
-    if (!isAdmin) {
+    if (!isAdminOrSuperAdmin(user)) {
       return NextResponse.json({ error: 'Forbidden: Only administrators can delete a firm' }, { status: 403 });
     }
 

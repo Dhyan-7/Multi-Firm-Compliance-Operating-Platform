@@ -46,7 +46,7 @@ function createInMemoryStore(dbPath: string) {
       }
     ],
     organizations: seedDump.organizations || [
-      { id: 'org_001', name: 'Enterprise Compliance Group', status: 'active', financial_year_start: 4 }
+      { id: 'org_001', name: 'BALAJI GROUPS', status: 'active', financial_year_start: 4 }
     ],
     roles: seedDump.roles || [
       { id: 'role_01', name: 'Super Admin', description: 'Root authority with full unrestricted administrative control', is_system: 1 },
@@ -88,7 +88,7 @@ function createInMemoryStore(dbPath: string) {
       acc[s.key] = s.value;
       return acc;
     }, {
-      org_name: 'Enterprise Compliance Group',
+      org_name: 'BALAJI GROUPS',
       financial_year_start: '4',
       date_format: 'DD MMM YYYY',
       timezone: 'Asia/Kolkata',
@@ -453,13 +453,13 @@ function ensureAdminUser(db: any) {
     const bcrypt = require('bcryptjs');
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     const passwordHash = bcrypt.hashSync(adminPassword, 10);
-    const existing = db.prepare("SELECT id FROM users WHERE id = 'user_01' OR LOWER(email) = 'raghu.gr@balajitransports.in' OR LOWER(email) = 'admin@complianceos.com'").get();
+    const existing = db.prepare("SELECT id FROM users WHERE id = 'user_01' OR LOWER(email) = 'raghu.gr@balajitransports.in'").get();
     if (!existing) {
       db.prepare("INSERT INTO users (id, organization_id, name, email, password_hash, department_id, designation, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
         'user_01', 'org_001', 'Raghu G R', 'raghu.gr@balajitransports.in', passwordHash, 'dept_08', 'Super Admin', 'role_01'
       );
     } else {
-      db.prepare("UPDATE users SET name = 'Raghu G R', email = 'raghu.gr@balajitransports.in', password_hash = ? WHERE id = 'user_01' OR LOWER(email) = 'raghu.gr@balajitransports.in' OR LOWER(email) = 'admin@complianceos.com'").run(passwordHash);
+      db.prepare("UPDATE users SET name = 'Raghu G R', email = 'raghu.gr@balajitransports.in', password_hash = ? WHERE id = 'user_01' OR LOWER(email) = 'raghu.gr@balajitransports.in'").run(passwordHash);
     }
   } catch (e) {
     console.warn('ensureAdminUser check skipped:', e);
@@ -477,6 +477,36 @@ function runMigrations(db: any) {
   try { db.exec("ALTER TABLE departments ADD COLUMN updated_at DATETIME"); } catch {}
   try { db.exec("ALTER TABLE comments ADD COLUMN attachment_url TEXT"); } catch {}
   try { db.exec("ALTER TABLE comments ADD COLUMN attachment_name TEXT"); } catch {}
+
+  // Safe migration: remove legacy employee_count and turnover_band from firms
+  try {
+    const firmCols = db.prepare("PRAGMA table_info(firms)").all().map((c: any) => c.name);
+    if (firmCols.includes('employee_count')) {
+      db.exec("ALTER TABLE firms DROP COLUMN employee_count");
+    }
+    if (firmCols.includes('turnover_band')) {
+      db.exec("ALTER TABLE firms DROP COLUMN turnover_band");
+    }
+  } catch (err) {
+    console.warn('[Migration] Drop employee_count/turnover_band notice:', err);
+  }
+
+  // Safe migration: purge orphaned contact records referencing deleted firms
+  try {
+    db.exec("DELETE FROM firm_contacts WHERE firm_id NOT IN (SELECT id FROM firms)");
+  } catch {}
+
+  // Safe migration: synchronize organization name to BALAJI GROUPS
+  try {
+    db.exec("UPDATE organizations SET name = 'BALAJI GROUPS' WHERE id = 'org_001' OR name = 'Enterprise Compliance Group'");
+    db.exec("UPDATE system_settings SET value = 'BALAJI GROUPS' WHERE key = 'org_name' AND (value = 'Enterprise Compliance Group' OR value = '')");
+  } catch {}
+
+  // Safe migration: update rules from employee_count to statutory registration conditions
+  try {
+    db.exec("UPDATE compliance_rules SET condition_type = 'registration', condition_field = 'pf', condition_operator = 'exists', condition_value = NULL WHERE condition_field = 'employee_count' AND compliance_id = 'comp_25'");
+    db.exec("UPDATE compliance_rules SET condition_type = 'registration', condition_field = 'esi', condition_operator = 'exists', condition_value = NULL WHERE condition_field = 'employee_count' AND compliance_id = 'comp_28'");
+  } catch {}
 
   // Email Notification & Event Architecture tables
   try {
@@ -677,8 +707,6 @@ function initializeSchema(db: any) {
       website TEXT,
       industry TEXT,
       business_type TEXT,
-      employee_count INTEGER DEFAULT 0,
-      turnover_band TEXT,
       status TEXT DEFAULT 'active',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -1052,7 +1080,7 @@ function seedData(db: any) {
   const orgId = 'org_001';
   
   // Organization
-  db.prepare("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')").run(orgId, 'Enterprise Compliance Group');
+  db.prepare("INSERT INTO organizations (id, name, status) VALUES (?, ?, 'active')").run(orgId, 'BALAJI GROUPS');
 
   // Entity Types
   const entityTypes = [
@@ -1237,8 +1265,8 @@ function seedData(db: any) {
     ['rule_06', 'comp_17', 'et_01', null, 'entity', 'entity_type', 'equals', 'PRIVATE_LIMITED'],
     ['rule_07', 'comp_19', 'et_01', null, 'entity', 'entity_type', 'equals', 'PRIVATE_LIMITED'],
     ['rule_08', 'comp_20', 'et_01', null, 'entity', 'entity_type', 'equals', 'PRIVATE_LIMITED'],
-    ['rule_09', 'comp_25', null, null, 'numeric', 'employee_count', 'gte', '20'],
-    ['rule_10', 'comp_28', null, null, 'numeric', 'employee_count', 'gte', '10'],
+    ['rule_09', 'comp_25', null, null, 'registration', 'pf', 'exists', null],
+    ['rule_10', 'comp_28', null, null, 'registration', 'esi', 'exists', null],
     ['rule_11', 'comp_01', 'et_03', null, 'registration', 'gstin', 'exists', null],
     ['rule_12', 'comp_02', 'et_03', null, 'registration', 'gstin', 'exists', null],
     ['rule_13', 'comp_01', 'et_05', null, 'registration', 'gstin', 'exists', null],
@@ -1296,7 +1324,7 @@ function seedData(db: any) {
 
   // System Settings
   const settStmt = db.prepare("INSERT INTO system_settings (key, value) VALUES (?, ?)");
-  settStmt.run('org_name', 'Enterprise Compliance Group');
+  settStmt.run('org_name', 'BALAJI GROUPS');
   settStmt.run('financial_year_start', '4');
   settStmt.run('date_format', 'DD MMM YYYY');
   settStmt.run('timezone', 'Asia/Kolkata');

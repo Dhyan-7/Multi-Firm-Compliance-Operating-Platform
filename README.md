@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CompliCal — Multi-Firm Compliance Operating Platform
 
-## Getting Started
+**Client**: BALAJI GROUPS  
+**Product**: CompliCal  
+**Architecture**: Local Server / On-Premises Intranet Deployment  
 
-First, run the development server:
+---
 
+## Overview
+
+CompliCal is an enterprise-grade statutory compliance operating platform built specifically for **BALAJI GROUPS**. It centralizes regulatory obligations (GST, Income Tax, ROC/MCA, PF, ESI, Professional Tax, Secretarial) across multiple operating entities, provides four-eye review workflows, automated SLA tracking, an immutable Document Vault, and audit logging.
+
+CompliCal is engineered for **Local Server Deployment** without cloud vendor dependencies (Netlify, AWS, etc.).
+
+---
+
+## Core Modules & Capabilities
+
+1. **Multi-Firm Management**: Entity registration (Private Limited, LLP, Proprietorship, etc.), GSTIN, PAN, TAN, and state-wise jurisdiction mapping.
+2. **Master Statutory Compliance Library**: 50+ pre-configured statutory obligations with customizable frequency, filing day, grace periods, and regulatory references.
+3. **Automated Compliance Calendar**: Real-time month and year views with color-coded status bubbles, SLA overdue alerts, and formal rescheduling with mandatory reason capture.
+4. **Task Execution Workspace**: Mandatory statutory MIS filing fields (ARN, Challan number, Filing date, Tax amounts), discussions, screenshot/photo attachment uploads, and four-eye review approvals.
+5. **Document Vault**: Encrypted on-server storage in `public/uploads` with MIME-type validation, size limits (up to 25MB), access controls, and inline preview.
+6. **Notification Engine**: In-app real-time alerts and background SMTP notifications for task assignment, due-date warnings (7/3/1/0 days), overdue escalations, and daily briefings.
+7. **Security & Granular RBAC**: Role-based access control separating Super Admin, Admin, and Staff, with complete cryptographic audit trails.
+
+---
+
+## Quick Start (Local Server)
+
+### 1. Prerequisites
+- **Node.js**: `v20.x` or `v24.x` LTS
+- **npm**: `10.x` or `11.x`
+- **C/C++ Build Tools**: `build-essential` (Linux) / `xcode-select` (macOS)
+
+### 2. Setup Environment
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Install & Build
+```bash
+npm install
+npm run build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Start Local Server
+```bash
+npm run start
+```
+Open your browser to [http://localhost:3000](http://localhost:3000) or `http://<SERVER_LAN_IP>:3000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 5. Default Super Admin Credentials
+- **Email**: `raghu.gr@balajitransports.in`
+- **Password**: Configured in `.env` (`ADMIN_PASSWORD`, default `admin123`)
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Detailed Local Deployment Guide
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For PM2 process management, local Docker containerization, backup automation, and system service configuration, see:
+👉 [LOCAL_DEPLOYMENT.md](./LOCAL_DEPLOYMENT.md)

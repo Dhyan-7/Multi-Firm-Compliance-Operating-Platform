@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, isAdminOrSuperAdmin } from '@/lib/auth';
 
 export async function GET(
   request: Request,
@@ -54,6 +54,9 @@ export async function PUT(
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can update departments' }, { status: 403 });
+    }
 
     const { id } = await params;
     const body = await request.json();
@@ -106,6 +109,9 @@ export async function DELETE(
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can delete departments' }, { status: 403 });
+    }
 
     const { id } = await params;
     const url = new URL(request.url);

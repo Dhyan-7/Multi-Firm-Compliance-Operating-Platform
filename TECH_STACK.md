@@ -70,8 +70,7 @@ graph TD
 |---|---|---|---|
 | **Primary Engine** | better-sqlite3 | `13.0.3` | Synchronous C++ native SQLite driver delivering microsecond query execution |
 | **Storage Architecture** | SQLite 3 (WAL Mode) | `3.x` | Write-Ahead Logging (`PRAGMA journal_mode=WAL`) enabling non-blocking concurrent reads & writes |
-| **Serverless Engine** | sql.js | `1.14.2` | WebAssembly-based SQLite engine + in-memory store for serverless environments (Netlify / Lambda) |
-| **Relational Data Model**| 28 Relational Tables | Schema v1.0 | Normalized schema covering multi-firm entities, statutory tasks, audit logs, and document versioning |
+| **Relational Data Model**| 37 Relational Tables | Schema v1.0 | Normalized schema covering multi-firm entities, statutory tasks, audit logs, and document versioning |
 | **Integrity Assurance** | SQLite Foreign Keys | Built-in | `PRAGMA foreign_keys = ON` with cascading references and transaction checkpoints |
 
 #### Core Database Schema Entities
@@ -79,7 +78,7 @@ graph TD
 * **Compliance Master**: `compliance_categories`, `compliances`, `compliance_rules`, `firm_compliances`
 * **Task & SLA Workflow**: `compliance_tasks`, `comments`, `approvals`, `mis_records`, `mis_templates`
 * **Security & Auditing**: `users`, `roles`, `permissions`, `role_permissions`, `user_firm_access`, `audit_logs`
-* **Notifications & Storage**: `notifications`, `reminder_rules`, `saved_filters`, `documents`, `document_versions`
+* **Notifications & Storage**: `notifications`, `notification_events`, `email_notifications`, `notification_settings`, `documents`
 
 ---
 
@@ -88,9 +87,8 @@ graph TD
 |---|---|---|---|
 | **PDF Generation** | jsPDF & jsPDF-AutoTable | `4.2.1` | Dynamic generation of statutory compliance certificates, task reports, and executive summaries |
 | **Spreadsheet Exports** | SheetJS (xlsx) | `0.18.5` | Exporting Multi-Firm MIS data, master task lists, and audit logs to Excel (.xlsx) |
-| **Document Vault** | Next.js FormData + Disk | Built-in | Secure file upload and retrieval system in `/public/uploads/` with UUID mapping and soft-delete |
-| **Date & Time Engine** | date-fns & dateUtils | `4.4.0` / Custom | Standardized **Indian Standard Time (IST, Asia/Kolkata)** formatting with UTC parsing resilience |
-| **Unique Identifiers** | uuid | `14.0.2` | RFC4122 version 4 UUID generation for all database primary keys and upload filenames |
+| **Document Vault** | Next.js FormData + Local Disk | Built-in | Secure file upload and retrieval system in `/public/uploads/` with timestamped unique filenames and soft-delete |
+| **Date & Time Engine** | Custom dateUtils | Native | Standardized **Indian Standard Time (IST, Asia/Kolkata)** formatting with UTC parsing resilience |
 
 ---
 
@@ -98,25 +96,27 @@ graph TD
 
 | Tool | Purpose | Configuration |
 |---|---|---|
-| **Compiler & Bundler** | Next.js Turbopack | Enabled via `next dev --turbopack` for ultra-fast HMR (<250ms) |
+| **Compiler & Bundler** | Next.js Turbopack | Enabled via `next build` / `next dev` for ultra-fast compilation |
 | **Linter** | ESLint 9 | `eslint-config-next` configuring React and TypeScript lint rules |
 | **Type Checker** | TypeScript Compiler | `tsc --noEmit` validating 100% strict type safety |
-| **Process Management** | Node.js Daemon | Background long-running execution for local and server environments |
-| **Deployment Engine** | Docker / AWS / Netlify | Multi-stage Docker containerization and Netlify Next.js plugin |
+| **Process Management** | PM2 / Systemd / Node.js | Background 24/7 supervision for on-premises local server |
+| **Deployment Engine** | Local Server / Docker | Standalone Node.js server or multi-stage Docker containerization |
 
 ---
 
-## 4. Deployment Environments
+## 4. Local Server Deployment Architecture
 
-### Deployment Option 1: Docker / AWS ECS / EC2 (Recommended for Production)
+### Deployment Option 1: Native Node.js & PM2 (Recommended for On-Premises Server)
+* **Runtime**: Node.js 20+ LTS with native `better-sqlite3`.
+* **Process Manager**: PM2 supervising Next.js (`pm2 start npm --name complical -- run start`).
+* **Database**: Local high-speed SQLite database in `./data/compliance.db` with WAL mode.
+* **Document Vault**: Persistent disk storage in `./public/uploads/`.
+* **Zero Cloud Latency**: 100% on-premises intranet execution without external cloud hosting dependencies.
+
+### Deployment Option 2: Local Docker Container
 * **Container Base**: Node.js 20 Alpine Linux.
-* **Storage Mounts**: Persistent Docker volume mounted to `/app/data/` for `compliance.db` and `/app/public/uploads/` for documents.
-* **Zero Cold Starts**: Always-on container process with instant response times and complete better-sqlite3 performance.
-
-### Deployment Option 2: Serverless (Netlify / AWS Lambda / Vercel)
-* **Adapter**: `@netlify/plugin-nextjs`.
-* **State Management**: Zero-native-dependency in-memory store initialized via `src/lib/db/seed-data.json`.
-* **Stateless Scaling**: Automatically scales to zero during idle periods.
+* **Storage Mounts**: Persistent host volumes mounted to `/app/data/` for `compliance.db` and `/app/public/uploads/` for documents.
+* **Network**: Exposed on port 3000 bound to `0.0.0.0` for full BALAJI GROUPS LAN accessibility.
 
 ---
 

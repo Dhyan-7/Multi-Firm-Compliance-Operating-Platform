@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, isAdminOrSuperAdmin } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
@@ -51,6 +51,9 @@ export async function POST(request: Request) {
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can create new firms' }, { status: 403 });
+    }
 
     const data = await request.json();
 

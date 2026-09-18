@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, isAdminOrSuperAdmin } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
@@ -28,6 +28,9 @@ export async function POST(request: Request) {
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can manage compliance categories' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { name, code, description, color, icon } = body;
@@ -51,6 +54,9 @@ export async function PUT(request: Request) {
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can manage compliance categories' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { id, name, code, description, color, icon, status } = body;
@@ -89,6 +95,9 @@ export async function DELETE(request: Request) {
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can delete compliance categories' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

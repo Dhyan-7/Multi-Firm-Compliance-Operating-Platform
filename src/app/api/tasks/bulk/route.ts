@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, isAdminOrSuperAdmin } from '@/lib/auth';
 import { dispatchNotificationEvent } from '@/lib/notifications/engine';
 
 export async function POST(request: Request) {
   try {
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isAdminOrSuperAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden: Only administrators can perform bulk task actions' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { action, task_ids, assignee_id, department_id, status, due_date, reason } = body;

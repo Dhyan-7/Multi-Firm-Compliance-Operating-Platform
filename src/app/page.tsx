@@ -124,7 +124,7 @@ export default function CorporateHomePage() {
                   ENTERPRISE
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: '#94A3B8', letterSpacing: '0.02em' }}>Enterprise Compliance System</div>
+              <div style={{ fontSize: 11, color: '#94A3B8', letterSpacing: '0.02em', fontWeight: 600 }}>BALAJI GROUPS</div>
             </div>
           </Link>
 

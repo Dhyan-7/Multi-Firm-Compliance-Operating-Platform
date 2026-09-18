@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, isAdminOrSuperAdmin } from '@/lib/auth';
 import { dispatchNotificationEvent } from '@/lib/notifications/engine';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +27,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     `).get(id);
 
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+
+    // Restrict access if standard staff is trying to access another employee's task outside department
+    if (user.role_id === 'role_03' && !isAdminOrSuperAdmin(user)) {
+      const isAssigned = (task as any).assignee_id === user.id;
+      const isDept = (task as any).department_id === user.department_id;
+      if (!isAssigned && !isDept) {
+        return NextResponse.json({ error: 'Forbidden: Access to this task is restricted' }, { status: 403 });
+      }
+    }
 
     const compId = (task as any).comp_id;
     const mis = db.prepare("SELECT * FROM mis_records WHERE task_id = ? ORDER BY field_name").all(id);
@@ -68,6 +77,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (data.action === 'submit') {
+      const canSubmit = isAdminOrSuperAdmin(user) || currentTask.assignee_id === user.id || !currentTask.assignee_id;
+      if (!canSubmit) {
+        return NextResponse.json({ error: 'Forbidden: You can only submit tasks assigned to you' }, { status: 403 });
+      }
+
       db.prepare("UPDATE compliance_tasks SET status = 'submitted', submitted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
 
       if (currentTask.reviewer_id) {
@@ -110,6 +124,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (data.action === 'approve') {
+      const isReviewerOrAdmin = isAdminOrSuperAdmin(user) || currentTask.reviewer_id === user.id;
+      if (!isReviewerOrAdmin) {
+        return NextResponse.json({ error: 'Forbidden: Only designated reviewers or administrators can approve tasks' }, { status: 403 });
+      }
+
       db.prepare("UPDATE compliance_tasks SET status = 'completed', approved_at = CURRENT_TIMESTAMP, approved_by = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(user.id, id);
       db.prepare("INSERT INTO approvals (task_id, reviewer_id, action, comment) VALUES (?,?,'approved',?)").run(id, user.id, data.comment || '');
 
@@ -154,6 +173,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (data.action === 'reject' || data.action === 'request_changes') {
+      const isReviewerOrAdmin = isAdminOrSuperAdmin(user) || currentTask.reviewer_id === user.id;
+      if (!isReviewerOrAdmin) {
+        return NextResponse.json({ error: 'Forbidden: Only designated reviewers or administrators can reject or request changes' }, { status: 403 });
+      }
+
       const reason = (data.comment || data.reason || '').trim();
       if (!reason) {
         return NextResponse.json({ error: 'Reason for rejection/changes requested is mandatory' }, { status: 400 });
@@ -236,6 +260,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (data.action === 'update_priority') {
+      if (!isAdminOrSuperAdmin(user)) {
+        return NextResponse.json({ error: 'Forbidden: Only administrators can modify task priority' }, { status: 403 });
+      }
       const oldPriority = currentTask.priority;
       const newPriority = data.priority;
       const reason = data.reason || 'Manual priority adjustment';
@@ -265,6 +292,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (data.action === 'update_date') {
+      if (!isAdminOrSuperAdmin(user)) {
+        return NextResponse.json({ error: 'Forbidden: Only administrators can reschedule compliance tasks' }, { status: 403 });
+      }
       const oldDate = currentTask.due_date;
       const reason = (data.reason || '').trim() || 'Manual date adjustment';
 
@@ -390,6 +420,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (data.action === 'reassign') {
+      if (!isAdminOrSuperAdmin(user)) {
+        return NextResponse.json({ error: 'Forbidden: Only administrators can reassign tasks' }, { status: 403 });
+      }
       const oldAssignee = currentTask.assignee_id;
       const reason = data.reason || 'Workload rebalance';
 
