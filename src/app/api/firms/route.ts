@@ -108,9 +108,8 @@ export async function POST(request: Request) {
         id, organization_id, legal_name, display_name, entity_type_id,
         registration_number, cin, llpin, incorporation_date, pan, tan, gstin,
         financial_year, registered_address, communication_address, state, city,
-        pin_code, email, phone, website, industry, business_type, employee_count,
-        turnover_band, status
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active')
+        pin_code, email, phone, website, industry, business_type, status
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active')
     `).run(
       id, orgId, data.legal_name.trim(), data.display_name.trim(), data.entity_type_id,
       data.registration_number || null, data.cin || data.cin_llpin || null, data.llpin || null,
@@ -118,8 +117,7 @@ export async function POST(request: Request) {
       data.financial_year || 'April-March', data.registered_address || data.address_line1 || null,
       data.communication_address || data.registered_address || data.address_line1 || null,
       data.state.trim(), data.city.trim(), pinCode || null, data.email || null, data.phone || null,
-      data.website || null, data.industry || null, data.business_type || null,
-      Number(data.employee_count) || 0, data.turnover_band || null
+      data.website || null, data.industry || null, data.business_type || null
     );
 
     // Add user access

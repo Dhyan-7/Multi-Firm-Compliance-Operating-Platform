@@ -717,7 +717,7 @@ export default function UsersDirectoryPage() {
                     required
                     value={newUser.email}
                     onChange={e => setNewUser({ ...newUser, email: e.target.value })}
-                    placeholder="user@complianceos.com"
+                    placeholder="user@balajitransports.in"
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 6, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
                   />
                 </div>
@@ -747,7 +747,7 @@ export default function UsersDirectoryPage() {
                       ))}
                     </select>
                     <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
-                      👑 Only 1 Super Admin allowed (Dhyan). Assign Admin or User role.
+                      👑 Only 1 Super Admin allowed (Raghu G R). Assign Admin or User role.
                     </div>
                   </div>
 

@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const roleId = data.role_id || 'role_03';
     if (roleId === 'role_01') {
       return NextResponse.json({
-        error: 'Only 1 Super Admin is permitted in the system (Dhyan). Please assign Admin, User, or a custom role.'
+        error: 'Only 1 Super Admin is permitted in the system (Raghu G R). Please assign Admin, User, or a custom role.'
       }, { status: 400 });
     }
 

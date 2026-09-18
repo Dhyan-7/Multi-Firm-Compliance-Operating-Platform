@@ -22,7 +22,7 @@ function createInMemoryStore(dbPath: string) {
 
   const rawUsers = (seedDump.users || []).map((u: any) => ({
     ...u,
-    password_hash: u.email.toLowerCase() === 'admin@complianceos.com' ? passwordHash : u.password_hash,
+    password_hash: (u.email.toLowerCase() === 'raghu.gr@balajitransports.in' || u.id === 'user_01') ? passwordHash : u.password_hash,
     role_name: 'Super Admin',
     department_name: 'Management'
   }));
@@ -32,8 +32,8 @@ function createInMemoryStore(dbPath: string) {
       {
         id: 'user_01',
         organization_id: 'org_001',
-        name: 'Dhyan',
-        email: 'admin@complianceos.com',
+        name: 'Raghu G R',
+        email: 'raghu.gr@balajitransports.in',
         password_hash: passwordHash,
         department_id: 'dept_08',
         designation: 'Super Admin',
@@ -75,12 +75,12 @@ function createInMemoryStore(dbPath: string) {
         id: 'audit_01',
         organization_id: 'org_001',
         user_id: 'user_01',
-        user_name: 'Dhyan',
+        user_name: 'Raghu G R',
         action: 'SYSTEM_INITIALIZED',
         entity_type: 'system',
         entity_id: 'org_001',
-        entity_name: 'ComplianceOS Platform Initialized',
-        new_data: JSON.stringify({ admin: 'Dhyan', role: 'Super Admin' }),
+        entity_name: 'CompliCal Platform Initialized',
+        new_data: JSON.stringify({ admin: 'Raghu G R', role: 'Super Admin' }),
         created_at: new Date().toISOString()
       }
     ],
@@ -450,14 +450,16 @@ export function getDb(): any {
 
 function ensureAdminUser(db: any) {
   try {
-    const adminUser = db.prepare("SELECT id FROM users WHERE LOWER(email) = 'admin@complianceos.com'").get();
-    if (!adminUser) {
-      const bcrypt = require('bcryptjs');
-      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-      const passwordHash = bcrypt.hashSync(adminPassword, 10);
+    const bcrypt = require('bcryptjs');
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const passwordHash = bcrypt.hashSync(adminPassword, 10);
+    const existing = db.prepare("SELECT id FROM users WHERE id = 'user_01' OR LOWER(email) = 'raghu.gr@balajitransports.in' OR LOWER(email) = 'admin@complianceos.com'").get();
+    if (!existing) {
       db.prepare("INSERT INTO users (id, organization_id, name, email, password_hash, department_id, designation, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
-        'user_01', 'org_001', 'Dhyan', 'admin@complianceos.com', passwordHash, 'dept_08', 'Super Admin', 'role_01'
+        'user_01', 'org_001', 'Raghu G R', 'raghu.gr@balajitransports.in', passwordHash, 'dept_08', 'Super Admin', 'role_01'
       );
+    } else {
+      db.prepare("UPDATE users SET name = 'Raghu G R', email = 'raghu.gr@balajitransports.in', password_hash = ? WHERE id = 'user_01' OR LOWER(email) = 'raghu.gr@balajitransports.in' OR LOWER(email) = 'admin@complianceos.com'").run(passwordHash);
     }
   } catch (e) {
     console.warn('ensureAdminUser check skipped:', e);
@@ -475,6 +477,96 @@ function runMigrations(db: any) {
   try { db.exec("ALTER TABLE departments ADD COLUMN updated_at DATETIME"); } catch {}
   try { db.exec("ALTER TABLE comments ADD COLUMN attachment_url TEXT"); } catch {}
   try { db.exec("ALTER TABLE comments ADD COLUMN attachment_name TEXT"); } catch {}
+
+  // Email Notification & Event Architecture tables
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS notification_events (
+        id TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        firm_id TEXT,
+        task_id TEXT,
+        compliance_id TEXT,
+        triggered_by TEXT,
+        idempotency_key TEXT UNIQUE,
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS email_notifications (
+        id TEXT PRIMARY KEY,
+        event_id TEXT REFERENCES notification_events(id),
+        event_type TEXT NOT NULL,
+        recipient_id TEXT REFERENCES users(id),
+        recipient_email TEXT NOT NULL,
+        recipient_name TEXT,
+        subject TEXT NOT NULL,
+        body_html TEXT NOT NULL,
+        body_text TEXT,
+        firm_id TEXT,
+        task_id TEXT,
+        compliance_id TEXT,
+        status TEXT DEFAULT 'queued',
+        retry_count INTEGER DEFAULT 0,
+        max_retries INTEGER DEFAULT 3,
+        error_message TEXT,
+        sent_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS user_notification_preferences (
+        user_id TEXT PRIMARY KEY REFERENCES users(id),
+        email_enabled INTEGER DEFAULT 1,
+        task_assigned INTEGER DEFAULT 1,
+        task_reassigned INTEGER DEFAULT 1,
+        due_date_reminder INTEGER DEFAULT 1,
+        overdue_alert INTEGER DEFAULT 1,
+        missed_alert INTEGER DEFAULT 1,
+        task_review INTEGER DEFAULT 1,
+        task_rejected INTEGER DEFAULT 1,
+        changes_requested INTEGER DEFAULT 1,
+        task_completed INTEGER DEFAULT 1,
+        comment_added INTEGER DEFAULT 1,
+        daily_summary INTEGER DEFAULT 0,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS notification_settings (
+        id TEXT PRIMARY KEY DEFAULT 'settings_001',
+        email_mode TEXT DEFAULT 'production',
+        smtp_host TEXT,
+        smtp_port INTEGER DEFAULT 587,
+        smtp_secure INTEGER DEFAULT 0,
+        smtp_user TEXT,
+        smtp_pass TEXT,
+        from_name TEXT DEFAULT 'CompliCal Alerts',
+        from_email TEXT DEFAULT 'alerts@balajigroups.com',
+        daily_summary_enabled INTEGER DEFAULT 1,
+        daily_summary_time TEXT DEFAULT '08:00',
+        reminder_intervals TEXT DEFAULT '7,3,1,0',
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_email_notif_status ON email_notifications(status);
+      CREATE INDEX IF NOT EXISTS idx_email_notif_recipient ON email_notifications(recipient_id);
+      CREATE INDEX IF NOT EXISTS idx_email_notif_created ON email_notifications(created_at);
+      CREATE INDEX IF NOT EXISTS idx_notif_events_key ON notification_events(idempotency_key);
+    `);
+
+    // Ensure default notification_settings row exists
+    const settingsExist = db.prepare("SELECT id FROM notification_settings WHERE id = 'settings_001'").get();
+    if (!settingsExist) {
+      db.prepare(`
+        INSERT INTO notification_settings (id, email_mode, from_name, from_email, reminder_intervals)
+        VALUES ('settings_001', 'production', 'CompliCal Alerts', 'alerts@balajigroups.com', '7,3,1,0')
+      `).run();
+    }
+  } catch (err) {
+    console.error('Migration notification tables error:', err);
+  }
 }
 
 function initializeSchema(db: any) {
@@ -811,6 +903,75 @@ function initializeSchema(db: any) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS notification_events (
+      id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      firm_id TEXT,
+      task_id TEXT,
+      compliance_id TEXT,
+      triggered_by TEXT,
+      idempotency_key TEXT UNIQUE,
+      metadata TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS email_notifications (
+      id TEXT PRIMARY KEY,
+      event_id TEXT REFERENCES notification_events(id),
+      event_type TEXT NOT NULL,
+      recipient_id TEXT REFERENCES users(id),
+      recipient_email TEXT NOT NULL,
+      recipient_name TEXT,
+      subject TEXT NOT NULL,
+      body_html TEXT NOT NULL,
+      body_text TEXT,
+      firm_id TEXT,
+      task_id TEXT,
+      compliance_id TEXT,
+      status TEXT DEFAULT 'queued',
+      retry_count INTEGER DEFAULT 0,
+      max_retries INTEGER DEFAULT 3,
+      error_message TEXT,
+      sent_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS user_notification_preferences (
+      user_id TEXT PRIMARY KEY REFERENCES users(id),
+      email_enabled INTEGER DEFAULT 1,
+      task_assigned INTEGER DEFAULT 1,
+      task_reassigned INTEGER DEFAULT 1,
+      due_date_reminder INTEGER DEFAULT 1,
+      overdue_alert INTEGER DEFAULT 1,
+      missed_alert INTEGER DEFAULT 1,
+      task_review INTEGER DEFAULT 1,
+      task_rejected INTEGER DEFAULT 1,
+      changes_requested INTEGER DEFAULT 1,
+      task_completed INTEGER DEFAULT 1,
+      comment_added INTEGER DEFAULT 1,
+      daily_summary INTEGER DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS notification_settings (
+      id TEXT PRIMARY KEY DEFAULT 'settings_001',
+      email_mode TEXT DEFAULT 'production',
+      smtp_host TEXT,
+      smtp_port INTEGER DEFAULT 587,
+      smtp_secure INTEGER DEFAULT 0,
+      smtp_user TEXT,
+      smtp_pass TEXT,
+      from_name TEXT DEFAULT 'CompliCal Alerts',
+      from_email TEXT DEFAULT 'alerts@balajigroups.com',
+      daily_summary_enabled INTEGER DEFAULT 1,
+      daily_summary_time TEXT DEFAULT '08:00',
+      reminder_intervals TEXT DEFAULT '7,3,1,0',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
       organization_id TEXT,
@@ -966,11 +1127,11 @@ function seedData(db: any) {
     }
   });
 
-  // Users - Only Dhyan (Super Admin)
+  // Users - Initial Super Admin (Raghu G R)
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const passwordHash = bcrypt.hashSync(adminPassword, 10);
   const userStmt = db.prepare("INSERT INTO users (id, organization_id, name, email, password_hash, department_id, designation, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-  userStmt.run('user_01', orgId, 'Dhyan', 'admin@complianceos.com', passwordHash, 'dept_08', 'Super Admin', 'role_01');
+  userStmt.run('user_01', orgId, 'Raghu G R', 'raghu.gr@balajitransports.in', passwordHash, 'dept_08', 'Super Admin', 'role_01');
 
   // Compliance Categories
   const categories = [
@@ -1127,7 +1288,7 @@ function seedData(db: any) {
 
   // Initial System Audit Log
   const auditStmt = db.prepare("INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, new_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-  auditStmt.run(orgId, 'user_01', 'Dhyan', 'SYSTEM_INITIALIZED', 'system', 'org_001', 'ComplianceOS Platform Initialized', '{"admin":"Dhyan","role":"Super Admin"}');
+  auditStmt.run(orgId, 'user_01', 'Raghu G R', 'SYSTEM_INITIALIZED', 'system', 'org_001', 'CompliCal Platform Initialized', '{"admin":"Raghu G R","role":"Super Admin"}');
 
   // Default Reminder Rules (30, 15, 7, 3, 1, 0 days before)
   const remStmt = db.prepare("INSERT INTO reminder_rules (days_before, channel, is_active) VALUES (?, 'both', 1)");

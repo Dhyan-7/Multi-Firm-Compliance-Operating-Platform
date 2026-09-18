@@ -253,7 +253,7 @@ export default function ProfileSettingsPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Dhyan"
+                  placeholder="e.g. Raghu G R"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
                 />
               </div>

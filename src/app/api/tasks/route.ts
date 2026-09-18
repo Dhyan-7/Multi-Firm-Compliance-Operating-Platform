@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
+import { dispatchNotificationEvent } from '@/lib/notifications/engine';
 
 export async function GET(request: Request) {
   try {
@@ -10,6 +11,7 @@ export async function GET(request: Request) {
     const db = getDb();
     const { searchParams } = new URL(request.url);
     const firmId = searchParams.get('firm_id') || searchParams.get('firm');
+    const complianceId = searchParams.get('compliance_id') || searchParams.get('compliance');
     const status = searchParams.get('status');
     const month = searchParams.get('month');
     const year = searchParams.get('year');
@@ -31,9 +33,22 @@ export async function GET(request: Request) {
       where += ' AND t.firm_id = ?';
       params.push(firmId);
     }
+    if (complianceId && complianceId !== 'all') {
+      where += ' AND t.compliance_id = ?';
+      params.push(complianceId);
+    }
     if (status && status !== 'all') {
-      where += ' AND t.status = ?';
-      params.push(status);
+      if (status === 'overdue') {
+        where += " AND (t.status = 'overdue' OR (t.due_date < date('now') AND t.status != 'completed'))";
+      } else if (status === 'pending') {
+        where += " AND t.status IN ('pending', 'not_started', 'assigned')";
+      } else if (status === 'my' || status === 'my_assigned') {
+        where += ' AND t.assignee_id = ?';
+        params.push(user.id);
+      } else {
+        where += ' AND t.status = ?';
+        params.push(status);
+      }
     }
     if (department && department !== 'all') {
       where += ' AND t.department_id = ?';
@@ -52,7 +67,7 @@ export async function GET(request: Request) {
       params.push(priority);
     }
     if (taskType && taskType !== 'all') {
-      where += ' AND COALESCE(t.task_type, "compliance") = ?';
+      where += " AND COALESCE(t.task_type, 'compliance') = ?";
       params.push(taskType);
     }
     if (dueDateFrom) {
@@ -64,15 +79,27 @@ export async function GET(request: Request) {
       params.push(dueDateTo);
     }
     if (isOverdue) {
-      where += " AND t.due_date < date('now') AND t.status != 'completed'";
+      where += " AND (t.status = 'overdue' OR (t.due_date < date('now') AND t.status != 'completed'))";
     }
     if (isCritical) {
       where += " AND t.priority = 'critical'";
     }
     if (search && search.trim()) {
-      where += ' AND (COALESCE(t.task_name, c.name, "") LIKE ? OR c.code LIKE ? OR f.display_name LIKE ? OR t.period LIKE ? OR COALESCE(t.task_description, "") LIKE ?)';
       const s = `%${search.trim()}%`;
-      params.push(s, s, s, s, s);
+      where += ` AND (
+        COALESCE(t.task_name, '') LIKE ? OR
+        COALESCE(t.task_description, '') LIKE ? OR
+        COALESCE(c.name, '') LIKE ? OR
+        COALESCE(c.code, '') LIKE ? OR
+        COALESCE(f.display_name, '') LIKE ? OR
+        COALESCE(f.legal_name, '') LIKE ? OR
+        COALESCE(u.name, '') LIKE ? OR
+        COALESCE(d.name, '') LIKE ? OR
+        COALESCE(t.task_number, '') LIKE ? OR
+        COALESCE(t.period, '') LIKE ? OR
+        COALESCE(t.id, '') LIKE ?
+      )`;
+      params.push(s, s, s, s, s, s, s, s, s, s, s);
     }
     if (month && year) {
       where += " AND strftime('%Y-%m', t.due_date) = ?";
@@ -98,7 +125,31 @@ export async function GET(request: Request) {
       ORDER BY t.due_date ASC
     `).all(...params);
 
-    return NextResponse.json({ tasks });
+    // Compute dynamic category counts scoped to firmFilter (if active)
+    const firmScope = (firmId && firmId !== 'all') ? 'AND firm_id = ?' : '';
+    const firmScopeParam = (firmId && firmId !== 'all') ? [firmId] : [];
+
+    const allCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE 1=1 ${firmScope}`).get(...firmScopeParam) as any)?.c || 0;
+    const myCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE assignee_id = ? ${firmScope}`).get(user.id, ...firmScopeParam) as any)?.c || 0;
+    const pendingCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE status IN ('pending', 'not_started', 'assigned') ${firmScope}`).get(...firmScopeParam) as any)?.c || 0;
+    const inProgressCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'in_progress' ${firmScope}`).get(...firmScopeParam) as any)?.c || 0;
+    const submittedCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'submitted' ${firmScope}`).get(...firmScopeParam) as any)?.c || 0;
+    const overdueCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE status != 'completed' AND (status = 'overdue' OR due_date < date('now')) ${firmScope}`).get(...firmScopeParam) as any)?.c || 0;
+    const missedCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'missed' ${firmScope}`).get(...firmScopeParam) as any)?.c || 0;
+    const completedCount = (db.prepare(`SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'completed' ${firmScope}`).get(...firmScopeParam) as any)?.c || 0;
+
+    const counts = {
+      all: allCount,
+      my: myCount,
+      pending: pendingCount,
+      in_progress: inProgressCount,
+      submitted: submittedCount,
+      overdue: overdueCount,
+      missed: missedCount,
+      completed: completedCount,
+    };
+
+    return NextResponse.json({ tasks, counts });
   } catch (error) {
     console.error('Tasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -180,14 +231,24 @@ export async function POST(request: Request) {
 
     // Notification if assignee assigned
     if (data.assignee_id) {
-      db.prepare(`
-        INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
-        VALUES (?, 'task_assigned', 'New Task Assigned', ?, 'task', ?)
-      `).run(
-        data.assignee_id,
-        `You have been assigned: ${data.task_name || 'Compliance Task'} for ${firm?.display_name || 'Organization'}. Due: ${data.due_date}`,
-        id
-      );
+      dispatchNotificationEvent({
+        eventType: 'TASK_ASSIGNED',
+        entityType: 'task',
+        entityId: id,
+        taskId: id,
+        firmId: data.firm_id,
+        complianceId: data.compliance_id || null,
+        triggeredBy: user.id,
+        recipientIds: [data.assignee_id],
+        data: {
+          taskName: data.task_name || 'Compliance Task',
+          firmName: firm?.display_name || 'Organization',
+          dueDate: data.due_date,
+          priority: data.priority || 'medium',
+          status: 'assigned',
+          assignedBy: user.name,
+        },
+      }).catch(err => console.error('Dispatch TASK_ASSIGNED error on create:', err));
     }
 
     return NextResponse.json({ id, taskNumber, message: 'Task created successfully' }, { status: 201 });

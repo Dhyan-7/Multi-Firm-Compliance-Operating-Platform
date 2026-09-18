@@ -35,17 +35,19 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { name, head_user_id } = body;
-    if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return NextResponse.json({ error: 'Department name is mandatory (minimum 2 characters)' }, { status: 400 });
+    }
 
     const db = getDb();
     const deptId = `dept_${Date.now().toString(36)}`;
     db.prepare("INSERT INTO departments (id, organization_id, name, head_user_id, status) VALUES (?, ?, ?, ?, 'active')")
-      .run(deptId, user.organization_id || 'org_001', name, head_user_id || null);
+      .run(deptId, user.organization_id || 'org_001', name.trim(), head_user_id || null);
 
     db.prepare(`
       INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, new_data)
       VALUES (?, ?, ?, 'DEPARTMENT_CREATED', 'department', ?, ?, ?)
-    `).run(user.organization_id, user.id, user.name, deptId, name, JSON.stringify({ name, head_user_id }));
+    `).run(user.organization_id, user.id, user.name, deptId, name.trim(), JSON.stringify({ name: name.trim(), head_user_id }));
 
     return NextResponse.json({ message: 'Department created', id: deptId });
   } catch (error) {

@@ -30,7 +30,7 @@ export default function Header({ onOpenSearch }: { onOpenSearch: () => void }) {
     if (pathname === '/audit') return 'Immutable Audit Trail';
     if (pathname === '/settings') return 'System Configuration';
     if (pathname === '/profile') return 'My Profile & Security Settings';
-    return 'ComplianceOS Platform';
+    return 'BALAJI GROUPS — CompliCal';
   };
 
   useEffect(() => {

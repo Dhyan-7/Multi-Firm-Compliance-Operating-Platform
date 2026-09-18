@@ -118,64 +118,215 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 10 KPI Cards Grid */}
+      {/* Interactive Task Summary Grid — 8 Clickable Categories + Firm Overview */}
+      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+          Statutory Task Execution & SLA Summary
+        </h3>
+        <span style={{ fontSize: 12, color: '#64748B' }}>Click any category to view and manage filtered tasks</span>
+      </div>
+
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: 16,
           marginBottom: 24,
         }}
       >
-        <div style={{ background: '#FFF', padding: '18px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>Total Firms</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', marginTop: 6 }}>{kpis.totalFirms || 0}</div>
-          <div style={{ fontSize: 11, color: '#10B981', marginTop: 4, fontWeight: 500 }}>Active entities</div>
-        </div>
+        {/* 1. All Tasks */}
+        <a
+          href="/tasks?tab=all"
+          style={{
+            background: '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#3B82F6'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.12)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>All Tasks</div>
+            <span style={{ fontSize: 13, color: '#3B82F6' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#0F172A', marginTop: 6 }}>{kpis.totalTasks || 0}</div>
+          <div style={{ fontSize: 11, color: '#64748B', marginTop: 4, fontWeight: 500 }}>Total statutory & custom tasks</div>
+        </a>
 
-        <div style={{ background: '#FFF', padding: '18px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>Total Tasks</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#0F172A', marginTop: 6 }}>{kpis.totalTasks || 0}</div>
-          <div style={{ fontSize: 11, color: '#64748B', marginTop: 4, fontWeight: 500 }}>Financial Year 2026-27</div>
-        </div>
+        {/* 2. My Assigned Tasks */}
+        <a
+          href="/tasks?tab=my"
+          style={{
+            background: '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.12)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#2563EB', fontWeight: 600, textTransform: 'uppercase' }}>My Assigned Tasks</div>
+            <span style={{ fontSize: 13, color: '#2563EB' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#2563EB', marginTop: 6 }}>{kpis.myAssigned || 0}</div>
+          <div style={{ fontSize: 11, color: '#3B82F6', marginTop: 4, fontWeight: 500 }}>Allocated directly to you</div>
+        </a>
 
-        <div style={{ background: '#FFF', padding: '18px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#10B981', fontWeight: 600, textTransform: 'uppercase' }}>Completed ✓</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#10B981', marginTop: 6 }}>{kpis.completed || 0}</div>
+        {/* 3. Pending */}
+        <a
+          href="/tasks?tab=pending"
+          style={{
+            background: '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#F59E0B'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.12)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600, textTransform: 'uppercase' }}>Pending ●</div>
+            <span style={{ fontSize: 13, color: '#F59E0B' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#F59E0B', marginTop: 6 }}>{kpis.pending || 0}</div>
+          <div style={{ fontSize: 11, color: '#B45309', marginTop: 4, fontWeight: 500 }}>Scheduled & assigned</div>
+        </a>
+
+        {/* 4. In Progress */}
+        <a
+          href="/tasks?tab=in_progress"
+          style={{
+            background: '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#0284C7'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(2, 132, 199, 0.12)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#0284C7', fontWeight: 600, textTransform: 'uppercase' }}>In Progress ◐</div>
+            <span style={{ fontSize: 13, color: '#0284C7' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#0284C7', marginTop: 6 }}>{kpis.inProgress || 0}</div>
+          <div style={{ fontSize: 11, color: '#0369A1', marginTop: 4, fontWeight: 500 }}>Execution in progress</div>
+        </a>
+
+        {/* 5. Awaiting Review */}
+        <a
+          href="/tasks?tab=submitted"
+          style={{
+            background: '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#8B5CF6'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.12)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600, textTransform: 'uppercase' }}>Awaiting Review</div>
+            <span style={{ fontSize: 13, color: '#8B5CF6' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#8B5CF6', marginTop: 6 }}>{kpis.submitted || 0}</div>
+          <div style={{ fontSize: 11, color: '#6D28D9', marginTop: 4, fontWeight: 500 }}>Submitted for four-eye approval</div>
+        </a>
+
+        {/* 6. Overdue */}
+        <a
+          href="/tasks?tab=overdue"
+          style={{
+            background: kpis.overdue > 0 ? '#FEF2F2' : '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: kpis.overdue > 0 ? '1px solid #FCA5A5' : '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#DC2626'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.15)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = kpis.overdue > 0 ? '#FCA5A5' : '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#DC2626', fontWeight: 600, textTransform: 'uppercase' }}>⚠️ Overdue</div>
+            <span style={{ fontSize: 13, color: '#DC2626' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#DC2626', marginTop: 6 }}>{kpis.overdue || 0}</div>
+          <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 4, fontWeight: 600 }}>Past statutory due date</div>
+        </a>
+
+        {/* 7. Missed */}
+        <a
+          href="/tasks?tab=missed"
+          style={{
+            background: '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#881337'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(136, 19, 55, 0.15)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#881337', fontWeight: 600, textTransform: 'uppercase' }}>✕ Missed</div>
+            <span style={{ fontSize: 13, color: '#881337' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#881337', marginTop: 6 }}>{kpis.missed || 0}</div>
+          <div style={{ fontSize: 11, color: '#9F1239', marginTop: 4, fontWeight: 500 }}>Grace period passed</div>
+        </a>
+
+        {/* 8. Completed */}
+        <a
+          href="/tasks?tab=completed"
+          style={{
+            background: '#FFF',
+            padding: '18px',
+            borderRadius: 12,
+            border: '1px solid #E2E8F0',
+            textDecoration: 'none',
+            display: 'block',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#10B981'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.12)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#10B981', fontWeight: 600, textTransform: 'uppercase' }}>✓ Completed</div>
+            <span style={{ fontSize: 13, color: '#10B981' }}>➔</span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#10B981', marginTop: 6 }}>{kpis.completed || 0}</div>
           <div style={{ fontSize: 11, color: '#059669', marginTop: 4, fontWeight: 500 }}>
             {kpis.totalTasks ? Math.round((kpis.completed / kpis.totalTasks) * 100) : 0}% completion rate
           </div>
-        </div>
-
-        <div style={{ background: '#FFF', padding: '18px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600, textTransform: 'uppercase' }}>Pending ●</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#F59E0B', marginTop: 6 }}>{kpis.pending || 0}</div>
-          <div style={{ fontSize: 11, color: '#B45309', marginTop: 4, fontWeight: 500 }}>Scheduled & assigned</div>
-        </div>
-
-        <div style={{ background: '#FFF', padding: '18px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#3B82F6', fontWeight: 600, textTransform: 'uppercase' }}>In Progress ◐</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#3B82F6', marginTop: 6 }}>{kpis.inProgress || 0}</div>
-          <div style={{ fontSize: 11, color: '#2563EB', marginTop: 4, fontWeight: 500 }}>Being executed</div>
-        </div>
-
-        <div style={{ background: kpis.overdue > 0 ? '#FEF2F2' : '#FFF', padding: '18px', borderRadius: 12, border: kpis.overdue > 0 ? '1px solid #FCA5A5' : '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#EF4444', fontWeight: 600, textTransform: 'uppercase' }}>Overdue ⚠️</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#DC2626', marginTop: 6 }}>{kpis.overdue || 0}</div>
-          <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 4, fontWeight: 600 }}>Requires attention</div>
-        </div>
-
-        <div style={{ background: '#FFF', padding: '18px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#881337', fontWeight: 600, textTransform: 'uppercase' }}>Missed ✕</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#881337', marginTop: 6 }}>{kpis.missed || 0}</div>
-          <div style={{ fontSize: 11, color: '#9F1239', marginTop: 4, fontWeight: 500 }}>Grace period passed</div>
-        </div>
-
-        <div style={{ background: '#FFF', padding: '18px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: 12, color: '#8B5CF6', fontWeight: 600, textTransform: 'uppercase' }}>Awaiting Review</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#8B5CF6', marginTop: 6 }}>{kpis.submitted || 0}</div>
-          <div style={{ fontSize: 11, color: '#6D28D9', marginTop: 4, fontWeight: 500 }}>Submitted by execs</div>
-        </div>
+        </a>
       </div>
 
       {/* Row: Firm Health Table & Category Breakdown */}

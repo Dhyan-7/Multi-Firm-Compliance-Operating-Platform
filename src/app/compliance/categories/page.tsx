@@ -54,6 +54,14 @@ export default function ComplianceCategoriesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    if (!catForm.name.trim()) {
+      alert('Category Name is required.');
+      return;
+    }
+    if (!catForm.code.trim()) {
+      alert('Category Code is required.');
+      return;
+    }
     setSaving(true);
     setNotice('');
     try {

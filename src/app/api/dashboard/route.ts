@@ -14,25 +14,26 @@ export async function GET(request: Request) {
     const monthStart = `${today.substring(0, 7)}-01`;
     const monthEnd = new Date(new Date(today).getFullYear(), new Date(today).getMonth() + 1, 0).toISOString().split('T')[0];
 
-    // KPI data
+    // Accurate Dynamic KPI data
     const totalFirms = (db.prepare("SELECT COUNT(*) as c FROM firms WHERE status = 'active'").get() as any).c;
     const totalTasks = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks").get() as any).c;
+    const myAssigned = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE assignee_id = ?").get(user.id) as any).c;
     const completed = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'completed'").get() as any).c;
     const pending = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE status IN ('pending','not_started','assigned')").get() as any).c;
     const inProgress = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'in_progress'").get() as any).c;
-    const overdue = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'overdue'").get() as any).c;
+    const overdue = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE status != 'completed' AND (status = 'overdue' OR due_date < date('now'))").get() as any).c;
     const missed = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'missed'").get() as any).c;
     const dueToday = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE due_date = ? AND status NOT IN ('completed','missed')").get(today) as any).c;
     const dueThisWeek = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE due_date BETWEEN ? AND ? AND status NOT IN ('completed','missed')").get(today, weekEnd) as any).c;
     const submitted = (db.prepare("SELECT COUNT(*) as c FROM compliance_tasks WHERE status = 'submitted'").get() as any).c;
 
-    // Firm-wise summary
+    // Firm-wise summary (strictly no employee count or turnover)
     const firmSummary = db.prepare(`
       SELECT f.id, f.display_name as name, f.legal_name,
         COUNT(t.id) as total,
         SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN t.status IN ('pending','not_started','assigned') THEN 1 ELSE 0 END) as pending,
-        SUM(CASE WHEN t.status = 'overdue' THEN 1 ELSE 0 END) as overdue,
+        SUM(CASE WHEN (t.status = 'overdue' OR (t.due_date < date('now') AND t.status != 'completed')) THEN 1 ELSE 0 END) as overdue,
         SUM(CASE WHEN t.status = 'missed' THEN 1 ELSE 0 END) as missed
       FROM firms f LEFT JOIN compliance_tasks t ON f.id = t.firm_id
       WHERE f.status = 'active' GROUP BY f.id ORDER BY f.display_name
@@ -101,7 +102,7 @@ export async function GET(request: Request) {
     `).all();
 
     return NextResponse.json({
-      kpis: { totalFirms, totalTasks, completed, pending, inProgress, overdue, missed, dueToday, dueThisWeek, submitted },
+      kpis: { totalFirms, totalTasks, myAssigned, completed, pending, inProgress, overdue, missed, dueToday, dueThisWeek, submitted },
       firmSummary,
       todayTasks,
       upcomingTasks,

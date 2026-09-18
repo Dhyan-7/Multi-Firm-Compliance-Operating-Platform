@@ -36,6 +36,8 @@ export default function DocumentsVaultPage() {
   const [renameDocType, setRenameDocType] = useState('');
   const [renameDeptId, setRenameDeptId] = useState('');
   const [renaming, setRenaming] = useState(false);
+  // Preview Modal
+  const [previewDoc, setPreviewDoc] = useState<any | null>(null);
 
   const fetchDocuments = async () => {
     if (!token) return;
@@ -95,11 +97,27 @@ export default function DocumentsVaultPage() {
       .catch(console.error);
   }, [token]);
 
+  const ALLOWED_EXTS = ['pdf', 'png', 'jpg', 'jpeg', 'xlsx', 'csv', 'docx'];
+
+  const validateFile = (file: File): boolean => {
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File exceeds the maximum allowable size of 25MB.');
+      return false;
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !ALLOWED_EXTS.includes(ext)) {
+      alert('Unsupported file format. Allowed types: PDF, PNG, JPG, JPEG, XLSX, CSV, DOCX.');
+      return false;
+    }
+    return true;
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
+      if (!validateFile(file)) return;
       setUploadFile(file);
       setUploadFileName(file.name);
       setUploadModalOpen(true);
@@ -109,6 +127,7 @@ export default function DocumentsVaultPage() {
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !uploadFile) return;
+    if (!validateFile(uploadFile)) return;
     if (!uploadFirmId) {
       alert('Please select an organization.');
       return;
@@ -499,6 +518,22 @@ export default function DocumentsVaultPage() {
                       <td style={{ padding: '12px', color: '#64748B' }}>{d.uploader_name || 'Staff'}</td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDoc(d)}
+                            style={{
+                              padding: '4px 10px',
+                              background: '#F0FDF4',
+                              color: '#15803D',
+                              border: '1px solid #BBF7D0',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            View 👁️
+                          </button>
                           <a
                             href={`/api/documents/${d.id}/download?token=${encodeURIComponent(token || '')}`}
                             style={{
@@ -590,10 +625,15 @@ export default function DocumentsVaultPage() {
                   </label>
                   <input
                     type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.xlsx,.csv,.docx"
                     required={!uploadFile}
                     onChange={e => {
                       const f = e.target.files?.[0];
                       if (f) {
+                        if (!validateFile(f)) {
+                          e.target.value = '';
+                          return;
+                        }
                         setUploadFile(f);
                         setUploadFileName(f.name);
                       }
@@ -801,6 +841,173 @@ export default function DocumentsVaultPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* In-Browser Document Viewer Modal */}
+      {previewDoc && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 20,
+          }}
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 14,
+              width: '100%',
+              maxWidth: 960,
+              height: '90vh',
+              maxHeight: 880,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '14px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#F8FAFC',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <span style={{ fontSize: 20 }}>
+                  {previewDoc.file_name?.toLowerCase().endsWith('.pdf') ? '📄' :
+                   /\.(png|jpe?g|webp|gif|svg)$/i.test(previewDoc.file_name || '') ? '🖼️' : '📎'}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {previewDoc.file_name}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#64748B' }}>
+                    {previewDoc.document_type || 'Document'} • {(previewDoc.file_size / 1024).toFixed(1)} KB
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <a
+                  href={`/api/documents/${previewDoc.id}/view?token=${encodeURIComponent(token || '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: '6px 12px',
+                    background: '#EFF6FF',
+                    color: '#2563EB',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  Open in New Tab ↗
+                </a>
+                <a
+                  href={`/api/documents/${previewDoc.id}/download?token=${encodeURIComponent(token || '')}`}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#2563EB',
+                    color: '#FFFFFF',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  Download ⬇
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 22,
+                    color: '#64748B',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    lineHeight: 1,
+                  }}
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div
+              style={{
+                flex: 1,
+                background: '#F1F5F9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'auto',
+                padding: 16,
+              }}
+            >
+              {previewDoc.file_name?.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={`/api/documents/${previewDoc.id}/view?token=${encodeURIComponent(token || '')}`}
+                  style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8, background: '#FFF' }}
+                  title={previewDoc.file_name}
+                />
+              ) : /\.(png|jpe?g|webp|gif|svg)$/i.test(previewDoc.file_name || '') ? (
+                <div style={{ maxWidth: '100%', maxHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img
+                    src={`/api/documents/${previewDoc.id}/view?token=${encodeURIComponent(token || '')}`}
+                    alt={previewDoc.file_name}
+                    style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 120px)', objectFit: 'contain', borderRadius: 8, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  />
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: 40, background: '#FFF', borderRadius: 12, border: '1px solid #E2E8F0', maxWidth: 440 }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>📁</div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>In-Browser Preview Not Supported</h4>
+                  <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>
+                    This file format (.{previewDoc.file_name?.split('.').pop()}) cannot be previewed directly in the browser. You can download and open it on your device.
+                  </p>
+                  <a
+                    href={`/api/documents/${previewDoc.id}/download?token=${encodeURIComponent(token || '')}`}
+                    style={{
+                      display: 'inline-block',
+                      padding: '10px 20px',
+                      background: '#2563EB',
+                      color: '#FFF',
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Download File ⬇
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
+import { dispatchNotificationEvent } from '@/lib/notifications/engine';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -52,10 +53,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const istTimestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
 
     const currentTask = db.prepare(`
-      SELECT t.*, f.display_name as fn, COALESCE(t.task_name, c.name, 'Task') as cn
+      SELECT t.*, f.display_name as fn, COALESCE(t.task_name, c.name, 'Task') as cn,
+             c.name as comp_name, d.name as department_name, u.name as assignee_name
       FROM compliance_tasks t
       JOIN firms f ON t.firm_id = f.id
       LEFT JOIN compliances c ON t.compliance_id = c.id
+      LEFT JOIN departments d ON t.department_id = d.id
+      LEFT JOIN users u ON t.assignee_id = u.id
       WHERE t.id = ?
     `).get(id) as any;
 
@@ -67,14 +71,26 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       db.prepare("UPDATE compliance_tasks SET status = 'submitted', submitted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
 
       if (currentTask.reviewer_id) {
-        db.prepare("INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id) VALUES (?,?,?,?,?,?)").run(
-          currentTask.reviewer_id,
-          'task_submitted',
-          'Task Submitted for Review',
-          `${currentTask.cn} for ${currentTask.fn} submitted by ${user.name}`,
-          'task',
-          id
-        );
+        dispatchNotificationEvent({
+          eventType: 'TASK_SUBMITTED',
+          entityType: 'task',
+          entityId: id,
+          taskId: id,
+          firmId: currentTask.firm_id,
+          complianceId: currentTask.compliance_id,
+          triggeredBy: user.id,
+          recipientIds: [currentTask.reviewer_id],
+          data: {
+            taskName: currentTask.cn,
+            firmName: currentTask.fn,
+            complianceName: currentTask.comp_name || currentTask.cn,
+            departmentName: currentTask.department_name,
+            priority: currentTask.priority,
+            dueDate: currentTask.due_date,
+            assignedBy: user.name,
+            status: 'submitted',
+          },
+        }).catch(err => console.error('Dispatch TASK_SUBMITTED error:', err));
       }
 
       db.prepare(`
@@ -98,14 +114,27 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       db.prepare("INSERT INTO approvals (task_id, reviewer_id, action, comment) VALUES (?,?,'approved',?)").run(id, user.id, data.comment || '');
 
       if (currentTask.assignee_id) {
-        db.prepare("INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id) VALUES (?,?,?,?,?,?)").run(
-          currentTask.assignee_id,
-          'task_approved',
-          'Task Approved & Completed',
-          `${currentTask.cn} for ${currentTask.fn} approved by ${user.name}`,
-          'task',
-          id
-        );
+        dispatchNotificationEvent({
+          eventType: 'TASK_APPROVED',
+          entityType: 'task',
+          entityId: id,
+          taskId: id,
+          firmId: currentTask.firm_id,
+          complianceId: currentTask.compliance_id,
+          triggeredBy: user.id,
+          recipientIds: [currentTask.assignee_id],
+          data: {
+            taskName: currentTask.cn,
+            firmName: currentTask.fn,
+            complianceName: currentTask.comp_name || currentTask.cn,
+            departmentName: currentTask.department_name,
+            priority: currentTask.priority,
+            dueDate: currentTask.due_date,
+            reviewerName: user.name,
+            status: 'completed',
+            comment: data.comment || '',
+          },
+        }).catch(err => console.error('Dispatch TASK_APPROVED error:', err));
       }
 
       db.prepare(`
@@ -146,14 +175,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       db.prepare("INSERT INTO approvals (task_id, reviewer_id, action, comment) VALUES (?,?, 'rejected', ?)").run(id, user.id, reason);
 
       if (newAssignee) {
-        db.prepare("INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id) VALUES (?,?,?,?,?,?)").run(
-          newAssignee,
-          'task_rejected',
-          'Task Changes Requested',
-          `${currentTask.cn} for ${currentTask.fn} requires changes: ${reason}`,
-          'task',
-          id
-        );
+        dispatchNotificationEvent({
+          eventType: data.action === 'reject' ? 'TASK_REJECTED' : 'TASK_CHANGES_REQUESTED',
+          entityType: 'task',
+          entityId: id,
+          taskId: id,
+          firmId: currentTask.firm_id,
+          complianceId: currentTask.compliance_id,
+          triggeredBy: user.id,
+          recipientIds: [newAssignee],
+          data: {
+            taskName: currentTask.cn,
+            firmName: currentTask.fn,
+            complianceName: currentTask.comp_name || currentTask.cn,
+            departmentName: currentTask.department_name,
+            priority: currentTask.priority,
+            dueDate: currentTask.due_date,
+            reviewerName: user.name,
+            rejectionReason: reason,
+            changesRequested: reason,
+            status: 'in_progress',
+          },
+        }).catch(err => console.error('Dispatch TASK_REJECTED error:', err));
       }
 
       db.prepare(`
@@ -235,14 +278,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       `).run(oldDate, data.due_date, reason, id);
 
       if (currentTask.assignee_id && currentTask.assignee_id !== user.id) {
-        db.prepare(`
-          INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
-          VALUES (?, 'task_rescheduled', 'Task Due Date Rescheduled', ?, 'task', ?)
-        `).run(
-          currentTask.assignee_id,
-          `${currentTask.cn} for ${currentTask.fn} due date moved from ${oldDate} to ${data.due_date}. Reason: ${reason}`,
-          id
-        );
+        dispatchNotificationEvent({
+          eventType: 'TASK_DUE_DATE_CHANGED',
+          entityType: 'task',
+          entityId: id,
+          taskId: id,
+          firmId: currentTask.firm_id,
+          complianceId: currentTask.compliance_id,
+          triggeredBy: user.id,
+          recipientIds: [currentTask.assignee_id],
+          data: {
+            taskName: currentTask.cn,
+            firmName: currentTask.fn,
+            complianceName: currentTask.comp_name || currentTask.cn,
+            departmentName: currentTask.department_name,
+            originalDueDate: oldDate,
+            dueDate: data.due_date,
+            comment: reason,
+            changedBy: user.name,
+            priority: currentTask.priority,
+            status: currentTask.status,
+          },
+        }).catch(err => console.error('Dispatch TASK_DUE_DATE_CHANGED error:', err));
       }
 
       db.prepare(`
@@ -293,18 +350,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         targetUserIds.add(currentTask.reviewer_id);
       }
 
-      const notifStmt = db.prepare(`
-        INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
-        VALUES (?, 'task_comment', 'New Comment on Task', ?, 'task', ?)
-      `);
-
-      const preview = commentText ? (commentText.length > 60 ? commentText.substring(0, 57) + '...' : commentText) : 'Added an attachment';
       for (const targetId of targetUserIds) {
-        notifStmt.run(
-          targetId,
-          `${user.name} commented on "${currentTask.cn}" (${currentTask.fn}): "${preview}"`,
-          id
-        );
+        dispatchNotificationEvent({
+          eventType: 'TASK_COMMENT_ADDED',
+          entityType: 'task',
+          entityId: id,
+          taskId: id,
+          firmId: currentTask.firm_id,
+          complianceId: currentTask.compliance_id,
+          triggeredBy: user.id,
+          recipientIds: [targetId],
+          data: {
+            taskName: currentTask.cn,
+            firmName: currentTask.fn,
+            complianceName: currentTask.comp_name || currentTask.cn,
+            departmentName: currentTask.department_name,
+            comment: commentText,
+            assignedBy: user.name,
+            priority: currentTask.priority,
+            dueDate: currentTask.due_date,
+            status: currentTask.status,
+          },
+        }).catch(err => console.error('Dispatch TASK_COMMENT_ADDED error:', err));
       }
 
       db.prepare(`
@@ -335,14 +402,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       `).run(data.assignee_id, data.department_id || null, id);
 
       if (data.assignee_id) {
-        db.prepare(`
-          INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
-          VALUES (?, 'task_assigned', 'Task Reassigned to You', ?, 'task', ?)
-        `).run(
-          data.assignee_id,
-          `${currentTask.cn} for ${currentTask.fn} has been reassigned to you. Reason: ${reason}`,
-          id
-        );
+        dispatchNotificationEvent({
+          eventType: 'TASK_REASSIGNED',
+          entityType: 'task',
+          entityId: id,
+          taskId: id,
+          firmId: currentTask.firm_id,
+          complianceId: currentTask.compliance_id,
+          triggeredBy: user.id,
+          recipientIds: [data.assignee_id],
+          data: {
+            taskName: currentTask.cn,
+            firmName: currentTask.fn,
+            complianceName: currentTask.comp_name || currentTask.cn,
+            departmentName: currentTask.department_name,
+            reassignedFrom: currentTask.assignee_name || 'Previous Assignee',
+            assignedBy: user.name,
+            comment: reason,
+            dueDate: currentTask.due_date,
+            priority: currentTask.priority,
+            status: currentTask.status,
+          },
+        }).catch(err => console.error('Dispatch TASK_REASSIGNED error:', err));
       }
 
       db.prepare(`
@@ -369,3 +450,4 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export const POST = PUT;
+export const PATCH = PUT;

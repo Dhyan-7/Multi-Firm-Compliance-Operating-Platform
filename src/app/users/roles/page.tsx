@@ -251,7 +251,7 @@ export default function RolesRbacPage() {
             Role-Based Access Control (RBAC) Matrix
           </h2>
           <p style={{ fontSize: 13, color: '#64748B', margin: '4px 0 0' }}>
-            Super Admin (Dhyan) and Admins can configure and assign modular permissions for Users and custom staff roles.
+            Super Admin (Raghu G R) and Admins can configure and assign modular permissions for Users and custom staff roles.
           </p>
         </div>
 
@@ -387,7 +387,7 @@ export default function RolesRbacPage() {
                   </h3>
                   {selectedRole.id === 'role_01' ? (
                     <span style={{ background: '#EDE9FE', color: '#6D28D9', padding: '2px 9px', borderRadius: 6, fontSize: 11, fontWeight: 700, border: '1px solid #DDD6FE' }}>
-                      👑 ROOT SUPER ADMIN (1 USER: DHYAN)
+                      👑 ROOT SUPER ADMIN (1 USER: RAGHU G R)
                     </span>
                   ) : selectedRole.id === 'role_02' ? (
                     <span style={{ background: '#EFF6FF', color: '#1D4ED8', padding: '2px 9px', borderRadius: 6, fontSize: 11, fontWeight: 700, border: '1px solid #BFDBFE' }}>

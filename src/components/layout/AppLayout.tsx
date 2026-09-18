@@ -167,7 +167,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 40, height: 40, border: '3px solid #E2E8F0', borderTopColor: '#3B82F6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#64748B', fontSize: '14px', fontWeight: 500 }}>Loading ComplianceOS...</p>
+          <p style={{ color: '#64748B', fontSize: '14px', fontWeight: 500 }}>Loading CompliCal...</p>
         </div>
       </div>
     );

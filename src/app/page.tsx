@@ -10,7 +10,7 @@ export default function CorporateHomePage() {
       id: 'sched',
       title: '1. Automated FY Scheduling',
       subtitle: 'Dynamic Statutory Engine',
-      desc: 'Generates financial year compliance tasks based on entity registrations, turnover thresholds, and statutory schedules with automated multi-day reminder intervals.',
+      desc: 'Generates financial year compliance tasks based on entity registrations and statutory schedules with automated multi-day reminder intervals.',
       badge: 'Auto-Triggered',
       details: [
         'Automatic calculation of statutory due dates (GSTR-1, GSTR-3B, 24Q, PF ECR, AOC-4)',
@@ -107,7 +107,7 @@ export default function CorporateHomePage() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em', color: '#FFF' }}>
-                  ComplianceOS
+                  CompliCal
                 </span>
                 <span
                   style={{
@@ -292,7 +292,7 @@ export default function CorporateHomePage() {
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#F59E0B' }} />
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981' }} />
-                <span style={{ marginLeft: 10, fontSize: 12, color: '#64748B', fontWeight: 600 }}>ComplianceOS Executive Overview • Enterprise Edition</span>
+                <span style={{ marginLeft: 10, fontSize: 12, color: '#64748B', fontWeight: 600 }}>CompliCal Executive Overview • BALAJI GROUPS Edition</span>
               </div>
               <span style={{ fontSize: 11, background: 'rgba(16, 185, 129, 0.1)', color: '#34D399', padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>
                 ● 100% REGULATORY SYNCHRONIZED
@@ -433,7 +433,7 @@ export default function CorporateHomePage() {
             {
               icon: '📅',
               title: 'Dynamic FY Calendar Generation',
-              desc: 'Generate complete 12-month compliance calendars in one click based on applicability rules, entity types, employee thresholds, and turnover bands.',
+              desc: 'Generate complete 12-month compliance calendars in one click based on applicability rules and statutory entity registrations.',
               tag: 'Rule-Based Automation',
             },
             {
@@ -445,7 +445,7 @@ export default function CorporateHomePage() {
             {
               icon: '👑',
               title: 'Single Root Super Admin & RBAC',
-              desc: 'Guaranteed single root authority (Dhyan) with full rights to delegate administrative access, configure custom roles, and fine-tune modular permissions.',
+              desc: 'Guaranteed single root authority (Raghu G R) with full rights to delegate administrative access, configure custom roles, and fine-tune modular permissions.',
               tag: 'Hierarchical Governance',
             },
             {
@@ -510,7 +510,7 @@ export default function CorporateHomePage() {
               The 4-Stage Compliance Verification Lifecycle
             </h2>
             <p style={{ fontSize: 15, color: '#94A3B8', maxWidth: 640, margin: '0 auto' }}>
-              Explore how ComplianceOS systematically moves statutory obligations from automated scheduling through to Super Admin sign-off.
+              Explore how CompliCal systematically moves statutory obligations from automated scheduling through to Super Admin sign-off.
             </p>
           </div>
 
@@ -652,7 +652,7 @@ export default function CorporateHomePage() {
               <div style={{ fontSize: 24, marginBottom: 12 }}>👑</div>
               <h4 style={{ fontSize: 16, fontWeight: 700, color: '#FFF', margin: '0 0 8px' }}>Single Super Admin Guard</h4>
               <p style={{ fontSize: 13, color: '#94A3B8', margin: 0, lineHeight: 1.6 }}>
-                Strict root authority (Dhyan) protected by immutable system code. No second Super Admin can be created or promoted.
+                Strict root authority (Raghu G R) protected by immutable system code. No second Super Admin can be created or promoted.
               </p>
             </div>
 
@@ -692,7 +692,7 @@ export default function CorporateHomePage() {
             Ready to Secure Your Organization&apos;s Compliances?
           </h2>
           <p style={{ fontSize: 15, color: '#CBD5E1', maxWidth: 600, margin: '0 auto 36px', lineHeight: 1.6 }}>
-            Sign in as Super Admin Dhyan or authorized staff to access your centralized multi-firm statutory workspace.
+            Sign in as Super Admin Raghu G R or authorized staff to access your centralized multi-firm statutory workspace.
           </p>
           <Link
             href="/login"
@@ -710,7 +710,7 @@ export default function CorporateHomePage() {
               boxShadow: '0 10px 20px -5px rgba(37, 99, 235, 0.6)',
             }}
           >
-            <span>Sign In to ComplianceOS</span>
+            <span>Sign In to CompliCal</span>
             <span>→</span>
           </Link>
         </div>
@@ -740,7 +740,7 @@ export default function CorporateHomePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 18 }}>⚖️</span>
             <div>
-              <span style={{ color: '#FFF', fontWeight: 700 }}>ComplianceOS Platform</span>
+              <span style={{ color: '#FFF', fontWeight: 700 }}>BALAJI GROUPS — CompliCal</span>
               <span style={{ margin: '0 8px' }}>•</span>
               <span>Enterprise Compliance Operating Standard</span>
             </div>
@@ -758,7 +758,7 @@ export default function CorporateHomePage() {
             </a>
           </div>
 
-          <div>All Rights Reserved © 2026 DHYAN</div>
+          <div>All Rights Reserved © 2026 BALAJI GROUPS</div>
         </div>
       </footer>
     </div>

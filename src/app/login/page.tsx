@@ -142,10 +142,13 @@ export default function LoginPage() {
             C
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-            ComplianceOS
+            CompliCal
           </h1>
-          <p style={{ fontSize: 13, color: '#64748B', marginTop: 6, margin: '6px 0 0' }}>
-            Multi-Firm Statutory Compliance Operating System
+          <p style={{ fontSize: 13, color: '#2563EB', fontWeight: 600, marginTop: 4, margin: '4px 0 0' }}>
+            BALAJI GROUPS
+          </p>
+          <p style={{ fontSize: 12, color: '#64748B', margin: '4px 0 0' }}>
+            Multi-Firm Statutory Compliance Operating Platform
           </p>
         </div>
 
@@ -270,7 +273,7 @@ export default function LoginPage() {
             <span>Enterprise Multi-Factor & Brute-Force Protected</span>
           </div>
           <div style={{ marginTop: 14, fontSize: 11, color: '#94A3B8' }}>
-            All Rights Reserved © 2026 DHYAN
+            BALAJI GROUPS — CompliCal • All Rights Reserved © 2026
           </div>
         </div>
       </div>

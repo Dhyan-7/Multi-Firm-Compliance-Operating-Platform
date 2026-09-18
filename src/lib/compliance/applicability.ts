@@ -4,8 +4,6 @@ export interface FirmProfile {
   id?: string;
   name: string;
   entity_type_code: string; // pvt_ltd, llp, prop, pub_ltd, etc.
-  employee_count?: number;
-  annual_turnover?: number; // In INR
   has_gstin?: boolean;
   has_pan?: boolean;
   has_tan?: boolean;
@@ -30,7 +28,7 @@ export interface ApplicableRule {
 }
 
 /**
- * Evaluates a firm profile against Indian statutory compliance criteria
+ * Evaluates a firm profile against statutory compliance criteria
  * Returns list of automatically recommended compliances
  */
 export function evaluateApplicability(profile: FirmProfile): ApplicableRule[] {
@@ -45,7 +43,6 @@ export function evaluateApplicability(profile: FirmProfile): ApplicableRule[] {
 
   const results: ApplicableRule[] = [];
   const entityCode = (profile.entity_type_code || '').toLowerCase();
-  const empCount = profile.employee_count || 0;
   const isCompany = entityCode.includes('pvt') || entityCode.includes('pub') || entityCode === 'ltd';
   const isLLP = entityCode.includes('llp');
 
@@ -58,23 +55,23 @@ export function evaluateApplicability(profile: FirmProfile): ApplicableRule[] {
 
     // GST Rules
     if (cat.includes('GST') || code.includes('GSTR') || code.includes('GST')) {
-      if (profile.has_gstin || (profile.annual_turnover && profile.annual_turnover > 4000000)) {
+      if (profile.has_gstin) {
         applicable = true;
-        reason = profile.has_gstin ? 'Firm possesses active GSTIN' : 'Turnover exceeds GST threshold (₹40L)';
+        reason = 'Firm possesses active GSTIN registration';
       }
     }
 
     // Income Tax Rules
     else if (cat.includes('INCOME TAX') || cat.includes('IT') || code.includes('ITR') || code.includes('ADV_TAX')) {
       applicable = true;
-      reason = 'Mandatory annual Income Tax obligation for all operational entities';
+      reason = 'Mandatory statutory Income Tax obligation for operational entities';
     }
 
     // TDS Rules
     else if (cat.includes('TDS') || code.includes('TDS') || code.includes('24Q') || code.includes('26Q')) {
-      if (profile.has_tan || isCompany || isLLP || (empCount > 5)) {
+      if (profile.has_tan || isCompany || isLLP) {
         applicable = true;
-        reason = profile.has_tan ? 'Firm possesses TAN' : 'Standard statutory withholding requirements for entities with staff';
+        reason = profile.has_tan ? 'Firm possesses active TAN' : 'Standard statutory withholding requirements for commercial entities';
       }
     }
 
@@ -88,29 +85,25 @@ export function evaluateApplicability(profile: FirmProfile): ApplicableRule[] {
 
     // PF (Provident Fund) Rules
     else if (cat.includes('PF') || code.includes('PF')) {
-      if (profile.has_pf || empCount >= 20) {
+      if (profile.has_pf || isCompany) {
         applicable = true;
-        reason = empCount >= 20 ? `Employee headcount (${empCount}) meets statutory PF threshold (20+)` : 'Registered for Provident Fund';
-      } else if (empCount > 5) {
-        applicable = true;
-        mandatory = false;
-        reason = 'Voluntary PF registration recommended for growing team';
+        reason = profile.has_pf ? 'Registered for Provident Fund' : 'Statutory retirement fund provisions for incorporated entities';
       }
     }
 
     // ESI Rules
     else if (cat.includes('ESI') || code.includes('ESI')) {
-      if (profile.has_esi || empCount >= 10) {
+      if (profile.has_esi) {
         applicable = true;
-        reason = empCount >= 10 ? `Employee headcount (${empCount}) meets statutory ESI threshold (10+)` : 'Registered for ESI';
+        reason = 'Statutory ESI registration and monthly return requirement';
       }
     }
 
     // Professional Tax
     else if (cat.includes('PROFESSIONAL TAX') || code.includes('PT')) {
-      if (profile.has_pt || empCount > 0) {
+      if (profile.has_pt || isCompany || isLLP) {
         applicable = true;
-        reason = 'State Professional Tax employer deduction & return requirement';
+        reason = 'State Professional Tax employer deduction & statutory filing';
       }
     }
 

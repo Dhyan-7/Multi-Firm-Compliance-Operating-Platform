@@ -28,7 +28,7 @@ export function generatePdfBuffer(title: string, columns: string[], rows: (strin
   // Header
   doc.setFontSize(18);
   doc.setTextColor(15, 23, 42); // slate-900
-  doc.text('ComplianceOS — Enterprise Report', 14, 20);
+  doc.text('BALAJI GROUPS — CompliCal Statutory Report', 14, 20);
 
   doc.setFontSize(12);
   doc.setTextColor(100, 116, 139);

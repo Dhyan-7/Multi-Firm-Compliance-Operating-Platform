@@ -1,16 +1,34 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/layout/AppLayout';
+import { formatISTShort, formatISTDate } from '@/lib/dateUtils';
 
-export default function TasksPage() {
+function TasksContent() {
   const { user, token } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic Category Counts from Database
+  const [counts, setCounts] = useState({
+    all: 0,
+    my: 0,
+    pending: 0,
+    in_progress: 0,
+    submitted: 0,
+    overdue: 0,
+    missed: 0,
+    completed: 0,
+  });
 
   // Filters
   const [activeTab, setActiveTab] = useState('all'); // all, my, pending, in_progress, submitted, overdue, missed, completed
   const [search, setSearch] = useState('');
   const [firmFilter, setFirmFilter] = useState('all');
+  const [complianceFilter, setComplianceFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [taskTypeFilter, setTaskTypeFilter] = useState('all'); // all, statutory, custom
   const [departmentFilter, setDepartmentFilter] = useState('all');
@@ -20,6 +38,7 @@ export default function TasksPage() {
 
   // Metadata for filters
   const [firmsList, setFirmsList] = useState<any[]>([]);
+  const [compliancesList, setCompliancesList] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [departmentsList, setDepartmentsList] = useState<any[]>([]);
 
@@ -41,6 +60,7 @@ export default function TasksPage() {
   // Selection & Bulk Actions
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [bulkModal, setBulkModal] = useState<'assign' | 'status' | 'reschedule' | null>(null);
+  const [bulkMode, setBulkMode] = useState<'direct' | 'dept'>('direct');
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [bulkDept, setBulkDept] = useState('');
   const [bulkStatus, setBulkStatus] = useState('in_progress');
@@ -49,22 +69,42 @@ export default function TasksPage() {
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [actionNotice, setActionNotice] = useState('');
 
+  // Sync with searchParams on initial load or URL change
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') || searchParams.get('status');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+    const compParam = searchParams.get('compliance_id') || searchParams.get('compliance');
+    if (compParam) {
+      setComplianceFilter(compParam);
+    }
+    const firmParam = searchParams.get('firm_id') || searchParams.get('firm');
+    if (firmParam) {
+      setFirmFilter(firmParam);
+    }
+  }, [searchParams]);
+
   const fetchTasks = async () => {
     if (!token) return;
     setLoading(true);
     try {
       const query = new URLSearchParams();
-      if (activeTab === 'my' && user?.id) query.set('assignee_id', user.id);
-      else if (activeTab !== 'all') query.set('status', activeTab);
+      if (activeTab === 'my') {
+        query.set('status', 'my');
+      } else if (activeTab !== 'all') {
+        query.set('status', activeTab);
+      }
 
       if (firmFilter !== 'all') query.set('firm_id', firmFilter);
+      if (complianceFilter !== 'all') query.set('compliance_id', complianceFilter);
       if (priorityFilter !== 'all') query.set('priority', priorityFilter);
       if (taskTypeFilter !== 'all') query.set('task_type', taskTypeFilter);
       if (departmentFilter !== 'all') query.set('department_id', departmentFilter);
       if (assigneeFilter !== 'all') query.set('assignee_id', assigneeFilter);
       if (dueDateFrom) query.set('due_date_from', dueDateFrom);
       if (dueDateTo) query.set('due_date_to', dueDateTo);
-      if (search) query.set('search', search);
+      if (search.trim()) query.set('search', search.trim());
 
       const res = await fetch(`/api/tasks?${query.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -72,6 +112,9 @@ export default function TasksPage() {
       if (res.ok) {
         const data = await res.json();
         setTasks(data.tasks || []);
+        if (data.counts) {
+          setCounts(data.counts);
+        }
       }
     } catch (err) {
       console.error('Fetch tasks error:', err);
@@ -82,7 +125,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, [token, activeTab, firmFilter, priorityFilter, taskTypeFilter, departmentFilter, assigneeFilter, dueDateFrom, dueDateTo, search]);
+  }, [token, activeTab, firmFilter, complianceFilter, priorityFilter, taskTypeFilter, departmentFilter, assigneeFilter, dueDateFrom, dueDateTo, search]);
 
   useEffect(() => {
     if (!token) return;
@@ -94,6 +137,11 @@ export default function TasksPage() {
           setCreateForm(prev => ({ ...prev, firm_id: d.firms[0].id }));
         }
       })
+      .catch(console.error);
+
+    fetch('/api/compliances', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(d => setCompliancesList(d.compliances || []))
       .catch(console.error);
 
     fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } })
@@ -115,11 +163,11 @@ export default function TasksPage() {
       return;
     }
     if (!createForm.firm_id) {
-      setCreateError('Please select a firm.');
+      setCreateError('Please select an organization/firm.');
       return;
     }
     if (!createForm.due_date) {
-      setCreateError('Due date is required.');
+      setCreateError('Valid statutory/internal due date is required.');
       return;
     }
 
@@ -211,9 +259,25 @@ export default function TasksPage() {
     }
   };
 
+  // Filtered users for bulk assign: Option A vs Option B
+  const assignableUsers = useMemo(() => {
+    if (bulkMode === 'dept' && bulkDept) {
+      return usersList.filter(u => u.department_id === bulkDept);
+    }
+    return usersList;
+  }, [bulkMode, bulkDept, usersList]);
+
   // Execute Bulk Action
   const executeBulkAction = async () => {
     if (!token || selectedTaskIds.length === 0 || !bulkModal) return;
+
+    if (bulkModal === 'assign') {
+      if (!bulkAssignee) {
+        alert('Please select a specific employee to assign the selected tasks to.');
+        return;
+      }
+    }
+
     setBulkProcessing(true);
     setActionNotice('');
 
@@ -221,12 +285,18 @@ export default function TasksPage() {
       const payload: any = { task_ids: selectedTaskIds };
       if (bulkModal === 'assign') {
         payload.action = 'assign';
-        payload.assignee_id = bulkAssignee || undefined;
-        payload.department_id = bulkDept || undefined;
+        payload.assignee_id = bulkAssignee;
+        const selectedUser = usersList.find(u => u.id === bulkAssignee);
+        payload.department_id = bulkDept || selectedUser?.department_id || undefined;
       } else if (bulkModal === 'status') {
         payload.action = 'status';
         payload.status = bulkStatus;
       } else if (bulkModal === 'reschedule') {
+        if (!bulkDueDate) {
+          alert('Please enter a valid rescheduled due date.');
+          setBulkProcessing(false);
+          return;
+        }
         payload.action = 'reschedule';
         payload.due_date = bulkDueDate;
         payload.reason = bulkReason;
@@ -246,6 +316,8 @@ export default function TasksPage() {
         setActionNotice(data.message || 'Bulk operation completed.');
         setSelectedTaskIds([]);
         setBulkModal(null);
+        setBulkAssignee('');
+        setBulkDept('');
         fetchTasks();
       } else {
         alert(data.error || 'Bulk operation failed.');
@@ -256,6 +328,21 @@ export default function TasksPage() {
       setBulkProcessing(false);
     }
   };
+
+  const clearAllFilters = () => {
+    setSearch('');
+    setActiveTab('all');
+    setFirmFilter('all');
+    setComplianceFilter('all');
+    setPriorityFilter('all');
+    setTaskTypeFilter('all');
+    setDepartmentFilter('all');
+    setAssigneeFilter('all');
+    setDueDateFrom('');
+    setDueDateTo('');
+  };
+
+  const isAnyFilterActive = search || activeTab !== 'all' || firmFilter !== 'all' || complianceFilter !== 'all' || priorityFilter !== 'all' || taskTypeFilter !== 'all' || departmentFilter !== 'all' || assigneeFilter !== 'all' || dueDateFrom || dueDateTo;
 
   return (
     <div>
@@ -310,17 +397,17 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid #E2E8F0', marginBottom: 18, overflowX: 'auto' }}>
+      {/* 8 Clickable Category Tabs with Dynamic Live Database Counts */}
+      <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid #E2E8F0', marginBottom: 18, overflowX: 'auto', paddingBottom: 2 }}>
         {[
-          { id: 'all', label: 'All Tasks' },
-          { id: 'my', label: 'My Assigned Tasks' },
-          { id: 'pending', label: 'Pending' },
-          { id: 'in_progress', label: 'In Progress' },
-          { id: 'submitted', label: 'Awaiting Review' },
-          { id: 'overdue', label: '⚠️ Overdue' },
-          { id: 'missed', label: '✕ Missed' },
-          { id: 'completed', label: '✓ Completed' },
+          { id: 'all', label: `All Tasks — ${counts.all}`, color: '#2563EB' },
+          { id: 'my', label: `My Assigned Tasks — ${counts.my}`, color: '#2563EB' },
+          { id: 'pending', label: `Pending — ${counts.pending}`, color: '#F59E0B' },
+          { id: 'in_progress', label: `In Progress — ${counts.in_progress}`, color: '#0284C7' },
+          { id: 'submitted', label: `Awaiting Review — ${counts.submitted}`, color: '#8B5CF6' },
+          { id: 'overdue', label: `⚠️ Overdue — ${counts.overdue}`, color: '#DC2626' },
+          { id: 'missed', label: `✕ Missed — ${counts.missed}`, color: '#881337' },
+          { id: 'completed', label: `✓ Completed — ${counts.completed}`, color: '#10B981' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -328,13 +415,15 @@ export default function TasksPage() {
             style={{
               padding: '10px 16px',
               border: 'none',
-              background: 'transparent',
+              background: activeTab === tab.id ? '#F8FAFC' : 'transparent',
               fontSize: 13,
               fontWeight: activeTab === tab.id ? 700 : 500,
-              color: activeTab === tab.id ? (tab.id === 'overdue' ? '#DC2626' : '#2563EB') : '#64748B',
-              borderBottom: activeTab === tab.id ? `2px solid ${tab.id === 'overdue' ? '#DC2626' : '#2563EB'}` : '2px solid transparent',
+              color: activeTab === tab.id ? tab.color : '#64748B',
+              borderBottom: activeTab === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
+              borderRadius: '8px 8px 0 0',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease',
             }}
           >
             {tab.label}
@@ -344,39 +433,58 @@ export default function TasksPage() {
 
       {/* Filter & Search Bar */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          type="text"
-          placeholder="Search task, firm, or statutory code..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13 }}
-        />
+        {/* Real Multi-field Search Input */}
+        <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+          <input
+            type="text"
+            placeholder="Search task name, compliance, firm, assignee, department, or ID..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: '100%', padding: '9px 34px 9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, boxSizing: 'border-box' }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: 14 }}
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
+        {/* Firm Filter */}
         <select
           value={firmFilter}
           onChange={e => setFirmFilter(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
         >
-          <option value="all">All Firms</option>
+          <option value="all">All Organizations / Firms</option>
           {firmsList.map(f => (
             <option key={f.id} value={f.id}>{f.display_name}</option>
           ))}
         </select>
 
+        {/* Dynamic Compliance Filter */}
         <select
-          value={taskTypeFilter}
-          onChange={e => setTaskTypeFilter(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          value={complianceFilter}
+          onChange={e => setComplianceFilter(e.target.value)}
+          style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF', maxWidth: 220 }}
+          title="Filter by Statutory Compliance"
         >
-          <option value="all">All Task Types</option>
-          <option value="statutory">Statutory Compliance</option>
-          <option value="custom">Custom Tasks</option>
+          <option value="all">All Compliances (Master)</option>
+          {compliancesList.map(c => (
+            <option key={c.id} value={c.id}>
+              {c.code ? `${c.code} — ` : ''}{c.name}
+            </option>
+          ))}
         </select>
 
+        {/* Department Filter */}
         <select
           value={departmentFilter}
           onChange={e => setDepartmentFilter(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
         >
           <option value="all">All Departments</option>
           {departmentsList.map(d => (
@@ -384,23 +492,25 @@ export default function TasksPage() {
           ))}
         </select>
 
+        {/* Assignee Filter formatted as Username (Department) */}
         <select
           value={assigneeFilter}
           onChange={e => setAssigneeFilter(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
         >
           <option value="all">All Assignees</option>
           {usersList.map(u => (
             <option key={u.id} value={u.id}>
-              {u.name} {u.department_name ? `(${u.department_name})` : ''}
+              {u.name} ({u.department_name || 'General'})
             </option>
           ))}
         </select>
 
+        {/* Priority Filter */}
         <select
           value={priorityFilter}
           onChange={e => setPriorityFilter(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+          style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
         >
           <option value="all">All Priorities</option>
           <option value="critical">Critical</option>
@@ -409,6 +519,18 @@ export default function TasksPage() {
           <option value="low">Low</option>
         </select>
 
+        {/* Task Type Filter */}
+        <select
+          value={taskTypeFilter}
+          onChange={e => setTaskTypeFilter(e.target.value)}
+          style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: 13, background: '#FFF' }}
+        >
+          <option value="all">All Task Types</option>
+          <option value="statutory">Statutory Compliance</option>
+          <option value="custom">Custom Tasks</option>
+        </select>
+
+        {/* Due Date Range */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ fontSize: 12, color: '#64748B' }}>Due:</span>
           <input
@@ -436,6 +558,25 @@ export default function TasksPage() {
             </button>
           )}
         </div>
+
+        {/* Clear All Filters Button */}
+        {isAnyFilterActive && (
+          <button
+            onClick={clearAllFilters}
+            style={{
+              background: '#F1F5F9',
+              border: '1px solid #CBD5E1',
+              color: '#475569',
+              borderRadius: 8,
+              padding: '8px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            ✕ Reset Filters
+          </button>
+        )}
       </div>
 
       {/* Bulk Operations Floating Bar */}
@@ -465,7 +606,7 @@ export default function TasksPage() {
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button
-              onClick={() => setBulkModal('assign')}
+              onClick={() => { setBulkModal('assign'); setBulkMode('direct'); }}
               style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#3B82F6', color: '#FFF', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               Bulk Assign
@@ -491,13 +632,33 @@ export default function TasksPage() {
         {loading ? (
           <div style={{ padding: 60, textAlign: 'center' }}>
             <div style={{ width: 32, height: 32, border: '3px solid #E2E8F0', borderTopColor: '#3B82F6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-            <div style={{ color: '#64748B', fontSize: 13 }}>Loading tasks...</div>
+            <div style={{ color: '#64748B', fontSize: 13 }}>Loading tasks from CompliCal engine...</div>
           </div>
         ) : tasks.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: '#94A3B8' }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>No compliance tasks found</div>
-            <div style={{ fontSize: 12 }}>No tasks match current filter criteria.</div>
+          <div style={{ padding: 48, textAlign: 'center', color: '#64748B' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#1E293B' }}>No results found</div>
+            <div style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>
+              {search ? `No compliance tasks match "${search}". Try checking for spelling or clear search filters.` : 'No tasks match current filter criteria.'}
+            </div>
+            {isAnyFilterActive && (
+              <button
+                onClick={clearAllFilters}
+                style={{
+                  marginTop: 16,
+                  padding: '8px 16px',
+                  background: '#2563EB',
+                  color: '#FFF',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Reset All Filters
+              </button>
+            )}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -521,91 +682,77 @@ export default function TasksPage() {
               </tr>
             </thead>
             <tbody>
-              {tasks.map(t => {
-                const isOverdue = t.status === 'overdue';
-                const isSelected = selectedTaskIds.includes(t.id);
-                const isCustom = t.task_type === 'custom';
+              {tasks.map((task: any) => {
+                const isSelected = selectedTaskIds.includes(task.id);
                 return (
                   <tr
-                    key={t.id}
+                    key={task.id}
                     style={{
                       borderBottom: '1px solid #F1F5F9',
-                      background: isSelected ? '#EFF6FF' : isOverdue ? '#FFFBFB' : '#FFFFFF',
+                      background: isSelected ? '#F0F9FF' : 'transparent',
                     }}
                   >
                     <td style={{ padding: '12px' }}>
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={e => handleSelectRow(t.id, e.target.checked)}
+                        onChange={e => handleSelectRow(task.id, e.target.checked)}
                       />
                     </td>
-                    <td style={{ padding: '12px', fontWeight: 600, color: '#0F172A' }}>
-                      {t.firm_name}
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ fontWeight: 600, color: '#0F172A' }}>{task.firm_name}</div>
+                      <div style={{ fontSize: 11, color: '#94A3B8' }}>{task.task_number || task.id}</div>
                     </td>
                     <td style={{ padding: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                        {isCustom ? (
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: '#EDE9FE', color: '#6D28D9' }}>
+                      <div style={{ fontWeight: 600, color: '#1E293B' }}>{task.compliance_name}</div>
+                      <div style={{ fontSize: 11, color: '#64748B', display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
+                        {task.category_name && (
+                          <span style={{ color: task.category_color || '#3B82F6', fontWeight: 600 }}>
+                            {task.category_name}
+                          </span>
+                        )}
+                        {task.compliance_code && <span>• {task.compliance_code}</span>}
+                        {task.task_type === 'custom' && (
+                          <span style={{ background: '#EDE9FE', color: '#6D28D9', padding: '1px 5px', borderRadius: 4, fontSize: 10, fontWeight: 700 }}>
                             CUSTOM
                           </span>
-                        ) : (
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: '#E0F2FE', color: '#0369A1' }}>
-                            STATUTORY
-                          </span>
-                        )}
-                        <span style={{ fontWeight: 600, color: '#0F172A' }}>
-                          {isCustom ? (t.task_name || 'Untitled Custom Task') : t.compliance_name}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 11, color: '#64748B' }}>
-                        {isCustom ? (
-                          t.task_description ? (t.task_description.length > 50 ? t.task_description.substring(0, 50) + '...' : t.task_description) : 'Non-statutory task'
-                        ) : (
-                          <>Code: {t.compliance_code || 'N/A'} {t.category_name ? `• ${t.category_name}` : ''}</>
                         )}
                       </div>
-                    </td>
-                    <td style={{ padding: '12px', color: '#475569' }}>{t.period || '—'}</td>
-                    <td style={{ padding: '12px', fontWeight: 600, color: isOverdue ? '#DC2626' : '#0F172A' }}>
-                      {t.due_date} {isOverdue && '⚠️'}
                     </td>
                     <td style={{ padding: '12px', color: '#475569' }}>
-                      {t.assignee_name ? (
+                      {task.period || 'Annual / FY 26-27'}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ fontWeight: 600, color: task.status !== 'completed' && task.due_date < new Date().toISOString().split('T')[0] ? '#DC2626' : '#0F172A' }}>
+                        {formatISTDate(task.due_date)}
+                      </div>
+                      {task.status !== 'completed' && task.due_date < new Date().toISOString().split('T')[0] && (
+                        <div style={{ fontSize: 10, color: '#DC2626', fontWeight: 700 }}>OVERDUE</div>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      {task.assignee_name ? (
                         <div>
-                          <div>{t.assignee_name}</div>
-                          {t.department_name && <div style={{ fontSize: 10, color: '#94A3B8' }}>({t.department_name})</div>}
+                          <div style={{ fontWeight: 600, color: '#334155' }}>{task.assignee_name}</div>
+                          <div style={{ fontSize: 11, color: '#94A3B8' }}>{task.department_name || 'General'}</div>
                         </div>
                       ) : (
-                        <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>Unassigned</span>
+                        <span style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>Unassigned</span>
                       )}
                     </td>
                     <td style={{ padding: '12px' }}>
                       <select
-                        value={t.priority || 'medium'}
-                        onChange={e => handleUpdatePriority(t.id, e.target.value)}
+                        value={task.priority || 'medium'}
+                        onChange={e => handleUpdatePriority(task.id, e.target.value)}
                         style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: '3px 8px',
+                          padding: '3px 6px',
                           borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
                           border: '1px solid #CBD5E1',
-                          background:
-                            t.priority === 'critical'
-                              ? '#FEE2E2'
-                              : t.priority === 'high'
-                              ? '#FFEDD5'
-                              : t.priority === 'medium'
-                              ? '#EFF6FF'
-                              : '#F8FAFC',
-                          color:
-                            t.priority === 'critical'
-                              ? '#991B1B'
-                              : t.priority === 'high'
-                              ? '#C2410C'
-                              : t.priority === 'medium'
-                              ? '#1D4ED8'
-                              : '#475569',
+                          background: task.priority === 'critical' ? '#FEE2E2' : task.priority === 'high' ? '#FFEDD5' : task.priority === 'medium' ? '#FEF3C7' : '#F1F5F9',
+                          color: task.priority === 'critical' ? '#991B1B' : task.priority === 'high' ? '#C2410C' : task.priority === 'medium' ? '#B45309' : '#475569',
                           cursor: 'pointer',
                         }}
                       >
@@ -618,42 +765,42 @@ export default function TasksPage() {
                     <td style={{ padding: '12px' }}>
                       <span
                         style={{
+                          display: 'inline-block',
+                          padding: '3px 8px',
+                          borderRadius: 6,
                           fontSize: 11,
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: 12,
+                          fontWeight: 700,
+                          textTransform: 'capitalize',
                           background:
-                            t.status === 'completed'
-                              ? '#D1FAE5'
-                              : t.status === 'overdue'
-                              ? '#FEE2E2'
-                              : t.status === 'submitted'
-                              ? '#EDE9FE'
-                              : '#FEF3C7',
+                            task.status === 'completed' ? '#DCFCE7' :
+                            task.status === 'submitted' ? '#EDE9FE' :
+                            task.status === 'in_progress' ? '#E0F2FE' :
+                            task.status === 'overdue' || (task.status !== 'completed' && task.due_date < new Date().toISOString().split('T')[0]) ? '#FEE2E2' :
+                            task.status === 'missed' ? '#FFE4E6' : '#FEF3C7',
                           color:
-                            t.status === 'completed'
-                              ? '#065F46'
-                              : t.status === 'overdue'
-                              ? '#991B1B'
-                              : t.status === 'submitted'
-                              ? '#5B21B6'
-                              : '#92400E',
+                            task.status === 'completed' ? '#166534' :
+                            task.status === 'submitted' ? '#5B21B6' :
+                            task.status === 'in_progress' ? '#0369A1' :
+                            task.status === 'overdue' || (task.status !== 'completed' && task.due_date < new Date().toISOString().split('T')[0]) ? '#991B1B' :
+                            task.status === 'missed' ? '#881337' : '#B45309',
                         }}
                       >
-                        {t.status}
+                        {task.status === 'submitted' ? 'Awaiting Review' : task.status}
                       </span>
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
                       <a
-                        href={`/tasks/${t.id}`}
+                        href={`/tasks/${task.id}`}
                         style={{
                           background: '#EFF6FF',
                           color: '#2563EB',
-                          padding: '5px 10px',
+                          padding: '5px 12px',
                           borderRadius: 6,
+                          textDecoration: 'none',
                           fontSize: 12,
                           fontWeight: 600,
-                          textDecoration: 'none',
+                          display: 'inline-block',
+                          border: '1px solid #BFDBFE',
                         }}
                       >
                         Open Workspace →
@@ -685,31 +832,24 @@ export default function TasksPage() {
           <div
             style={{
               width: '100%',
-              maxWidth: 540,
+              maxWidth: 520,
               background: '#FFFFFF',
               borderRadius: 14,
               padding: 28,
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
               border: '1px solid #E2E8F0',
-              maxHeight: '90vh',
-              overflowY: 'auto',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>
-                Create Custom Task
-              </h3>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                style={{ background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', color: '#94A3B8' }}
-              >
-                ✕
-              </button>
-            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
+              Create Custom Compliance Task
+            </h3>
+            <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 20px' }}>
+              Schedule ad-hoc regulatory assignments, internal reviews, or operational deadlines.
+            </p>
 
             {createError && (
-              <div style={{ marginBottom: 16, padding: '10px 14px', background: '#FEE2E2', color: '#991B1B', borderRadius: 8, fontSize: 13, border: '1px solid #FCA5A5' }}>
-                {createError}
+              <div style={{ padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 8, fontSize: 13, marginBottom: 16 }}>
+                ⚠️ {createError}
               </div>
             )}
 
@@ -717,12 +857,28 @@ export default function TasksPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Organization / Firm *
+                  </label>
+                  <select
+                    required
+                    value={createForm.firm_id}
+                    onChange={e => setCreateForm({ ...createForm, firm_id: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                  >
+                    {firmsList.map(f => (
+                      <option key={f.id} value={f.id}>{f.display_name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
                     Task Name *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Internal Audit Reconciliation Q3"
+                    placeholder="e.g. Quarterly Board Resolution for Banking"
                     value={createForm.task_name}
                     onChange={e => setCreateForm({ ...createForm, task_name: e.target.value })}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
@@ -731,32 +887,15 @@ export default function TasksPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
-                    Description / Scope
+                    Description & Statutory Details
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Brief description of task deliverables and expectations..."
+                    placeholder="Detailed compliance requirement or internal instructions..."
                     value={createForm.task_description}
                     onChange={e => setCreateForm({ ...createForm, task_description: e.target.value })}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
                   />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
-                    Firm *
-                  </label>
-                  <select
-                    required
-                    value={createForm.firm_id}
-                    onChange={e => setCreateForm({ ...createForm, firm_id: e.target.value })}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
-                  >
-                    <option value="">Select Firm...</option>
-                    {firmsList.map(f => (
-                      <option key={f.id} value={f.id}>{f.display_name}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -766,10 +905,10 @@ export default function TasksPage() {
                     </label>
                     <select
                       value={createForm.department_id}
-                      onChange={e => setCreateForm({ ...createForm, department_id: e.target.value, assignee_id: '' })}
+                      onChange={e => setCreateForm({ ...createForm, department_id: e.target.value })}
                       style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
                     >
-                      <option value="">All / Any Department</option>
+                      <option value="">Select Department...</option>
                       {departmentsList.map(d => (
                         <option key={d.id} value={d.id}>{d.name}</option>
                       ))}
@@ -778,21 +917,19 @@ export default function TasksPage() {
 
                   <div>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
-                      Assignee User
+                      Assignee Employee
                     </label>
                     <select
                       value={createForm.assignee_id}
                       onChange={e => setCreateForm({ ...createForm, assignee_id: e.target.value })}
                       style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
                     >
-                      <option value="">Unassigned</option>
-                      {usersList
-                        .filter(u => !createForm.department_id || u.department_id === createForm.department_id)
-                        .map(u => (
-                          <option key={u.id} value={u.id}>
-                            {u.name} {u.department_name ? `(${u.department_name})` : ''}
-                          </option>
-                        ))}
+                      <option value="">Select Assignee...</option>
+                      {usersList.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.department_name || 'General'})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -872,7 +1009,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* Bulk Action Modals */}
+      {/* Bulk Operations Modal */}
       {bulkModal && (
         <div
           style={{
@@ -890,7 +1027,7 @@ export default function TasksPage() {
           <div
             style={{
               width: '100%',
-              maxWidth: 480,
+              maxWidth: 520,
               background: '#FFFFFF',
               borderRadius: 14,
               padding: 28,
@@ -907,38 +1044,73 @@ export default function TasksPage() {
               Action applies immediately to all checked compliance items.
             </p>
 
+            {/* Bulk Assign: Option A (Direct User) vs Option B (Department -> User) */}
             {bulkModal === 'assign' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+                {/* Workflow Selector */}
+                <div style={{ display: 'flex', gap: 10, background: '#F8FAFC', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', fontWeight: 600, color: bulkMode === 'direct' ? '#2563EB' : '#64748B', flex: 1 }}>
+                    <input
+                      type="radio"
+                      name="bulkAssignMode"
+                      checked={bulkMode === 'direct'}
+                      onChange={() => { setBulkMode('direct'); setBulkDept(''); }}
+                    />
+                    Option A — Direct User
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', fontWeight: 600, color: bulkMode === 'dept' ? '#2563EB' : '#64748B', flex: 1 }}>
+                    <input
+                      type="radio"
+                      name="bulkAssignMode"
+                      checked={bulkMode === 'dept'}
+                      onChange={() => { setBulkMode('dept'); setBulkAssignee(''); }}
+                    />
+                    Option B — Department → User
+                  </label>
+                </div>
+
+                {bulkMode === 'dept' && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                      1. Select Department *
+                    </label>
+                    <select
+                      value={bulkDept}
+                      onChange={e => {
+                        setBulkDept(e.target.value);
+                        setBulkAssignee(''); // reset user selection so specific employee is chosen
+                      }}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
+                    >
+                      <option value="">Choose Department...</option>
+                      {departmentsList.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                    Assignee User
+                    {bulkMode === 'dept' ? '2. Select Specific Employee from Department *' : 'Select Assignee User *'}
                   </label>
                   <select
                     value={bulkAssignee}
                     onChange={e => setBulkAssignee(e.target.value)}
                     style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
                   >
-                    <option value="">Select Assignee User...</option>
-                    {usersList.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.role_name || u.email})</option>
+                    <option value="">Select Assignee Employee...</option>
+                    {assignableUsers.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.department_name || 'General'})
+                      </option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                    Department
-                  </label>
-                  <select
-                    value={bulkDept}
-                    onChange={e => setBulkDept(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', background: '#FFF' }}
-                  >
-                    <option value="">Select Department...</option>
-                    {departmentsList.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
+                  {bulkMode === 'dept' && bulkDept && assignableUsers.length === 0 && (
+                    <div style={{ fontSize: 12, color: '#DC2626', marginTop: 4 }}>
+                      ⚠️ No employees currently assigned to this department.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -979,7 +1151,7 @@ export default function TasksPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                    Reason for Bulk Reschedule
+                    Reason for Bulk Reschedule *
                   </label>
                   <textarea
                     rows={2}
@@ -1018,5 +1190,18 @@ export default function TasksPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ padding: 60, textAlign: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '3px solid #E2E8F0', borderTopColor: '#3B82F6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+        <div style={{ color: '#64748B', fontSize: 13 }}>Initializing workspace...</div>
+      </div>
+    }>
+      <TasksContent />
+    </Suspense>
   );
 }

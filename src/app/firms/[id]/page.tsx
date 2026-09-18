@@ -74,8 +74,6 @@ export default function FirmDetailPage({ params }: { params: Promise<{ id: strin
           gstin: firmData.firm?.gstin || '',
           cin: firmData.firm?.cin || firmData.firm?.cin_llpin || '',
           industry: firmData.firm?.industry || '',
-          employee_count: firmData.firm?.employee_count || 0,
-          turnover_band: firmData.firm?.turnover_band || '',
           registered_address: firmData.firm?.registered_address || '',
           city: firmData.firm?.city || '',
           state: firmData.firm?.state || '',
@@ -547,14 +545,6 @@ export default function FirmDetailPage({ params }: { params: Promise<{ id: strin
               </div>
               <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
                 <div>{firm.registered_address || firm.address_line1 || 'No address specified'}</div>
-                <div>{firm.city} {firm.state && `, ${firm.state}`} {firm.pin_code || firm.pincode}</div>
-              </div>
-
-              <div style={{ borderTop: '1px solid #F1F5F9', marginTop: 16, paddingTop: 14 }}>
-                <div style={{ fontSize: 12, color: '#64748B' }}>Headcount & Turnover:</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A', marginTop: 4 }}>
-                  {firm.employee_count || 0} Employees • {firm.turnover_band || 'Standard Turnover'}
-                </div>
               </div>
             </div>
           </div>
@@ -902,25 +892,7 @@ export default function FirmDetailPage({ params }: { params: Promise<{ id: strin
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Employee Count</label>
-                <input
-                  type="number"
-                  value={editForm.employee_count || 0}
-                  onChange={e => setEditForm({ ...editForm, employee_count: Number(e.target.value) })}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
-                />
-              </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Turnover Band</label>
-                <input
-                  type="text"
-                  value={editForm.turnover_band || ''}
-                  onChange={e => setEditForm({ ...editForm, turnover_band: e.target.value })}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
-                />
-              </div>
 
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Registered Address</label>

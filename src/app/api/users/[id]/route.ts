@@ -54,7 +54,7 @@ export async function PUT(
     const existing = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as any;
     if (!existing) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    // Hierarchy guard: Admin cannot modify the primary Super Admin (Dhyan)
+    // Hierarchy guard: Admin cannot modify the primary Super Admin (Raghu G R)
     if (id === 'user_01' && !isSuperAdmin(authUser)) {
       return NextResponse.json({ error: 'Forbidden: Admins cannot modify the primary Super Admin account' }, { status: 403 });
     }
@@ -62,7 +62,7 @@ export async function PUT(
     // Single Super Admin rule: Cannot promote any user to role_01
     if (body.role_id === 'role_01' && id !== 'user_01') {
       return NextResponse.json({
-        error: 'Only 1 Super Admin is permitted in the system (Dhyan). Please assign Admin, User, or a custom role.'
+        error: 'Only 1 Super Admin is permitted in the system (Raghu G R). Please assign Admin, User, or a custom role.'
       }, { status: 400 });
     }
 
@@ -150,7 +150,7 @@ export async function DELETE(
 
     // Prevent deleting primary Super Admin (user_01) or current user
     if (id === 'user_01') {
-      return NextResponse.json({ error: 'Primary Super Admin (Dhyan) cannot be deleted' }, { status: 400 });
+      return NextResponse.json({ error: 'Primary Super Admin (Raghu G R) cannot be deleted' }, { status: 400 });
     }
 
     if (id === authUser.id) {

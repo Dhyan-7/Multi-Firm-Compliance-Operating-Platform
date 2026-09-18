@@ -17,17 +17,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    // Determine actual file path
     const localPath = path.join(process.cwd(), 'public', doc.file_path.replace(/^\//, ''));
     if (!fs.existsSync(localPath)) {
-      // Check if sample or test document
       return NextResponse.json({ error: 'Physical file not found on server' }, { status: 404 });
     }
 
     const fileBuffer = fs.readFileSync(localPath);
-    const { searchParams } = new URL(request.url);
-    const isView = searchParams.get('view') === 'true' || searchParams.get('inline') === 'true';
-
     const ext = path.extname(doc.file_name).toLowerCase().replace('.', '');
     const mimeMap: Record<string, string> = {
       pdf: 'application/pdf',
@@ -46,11 +41,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `${isView ? 'inline' : 'attachment'}; filename="${encodeURIComponent(doc.file_name)}"`,
+        'Content-Disposition': `inline; filename="${encodeURIComponent(doc.file_name)}"`,
       },
     });
   } catch (error) {
-    console.error('Download error:', error);
-    return NextResponse.json({ error: 'Download failed' }, { status: 500 });
+    console.error('View document error:', error);
+    return NextResponse.json({ error: 'Failed to view document' }, { status: 500 });
   }
 }

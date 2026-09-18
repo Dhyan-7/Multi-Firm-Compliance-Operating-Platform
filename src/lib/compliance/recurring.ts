@@ -64,7 +64,7 @@ export function generateFirmComplianceCalendar(options: GenerateCalendarOptions)
   const orgId = firm.organization_id || 'org_001';
   const creatorId = options.created_by || 'system';
 
-  // Default reviewer (Super Admin Dhyan)
+  // Default reviewer (Super Admin Raghu G R)
   const defaultReviewer = db.prepare("SELECT id FROM users WHERE role_id = 'role_01' OR role_id = 'role_03' LIMIT 1").get() as any;
   const reviewerId = defaultReviewer?.id || 'user_01';
 

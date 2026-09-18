@@ -104,6 +104,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File size exceeds maximum allowable limit of 25MB' }, { status: 400 });
     }
 
+    const fileExt = path.extname(file.name).toLowerCase().replace('.', '');
+    const allowedExts = ['pdf', 'png', 'jpg', 'jpeg', 'xlsx', 'csv', 'docx'];
+    if (!allowedExts.includes(fileExt)) {
+      return NextResponse.json({ error: 'Unsupported file format. Allowed file types: PDF, PNG, JPG, JPEG, XLSX, CSV, DOCX.' }, { status: 400 });
+    }
+
     const db = getDb();
     let task: any = null;
     if (taskId) {

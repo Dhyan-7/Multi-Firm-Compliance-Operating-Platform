@@ -31,6 +31,11 @@ export default function TaskWorkspacePage({ params }: { params: Promise<{ id: st
   const [commentAttachment, setCommentAttachment] = useState<{ name: string; dataUrl: string } | null>(null);
   const [postingComment, setPostingComment] = useState(false);
 
+  // Document Viewer & Screenshot Lightbox States
+  const [previewDoc, setPreviewDoc] = useState<any | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
+
   // Rejection & Approval Modal
   const [actionModal, setActionModal] = useState<'reject' | 'approve' | 'reschedule' | 'reassign' | null>(null);
   const [actionComment, setActionComment] = useState('');
@@ -180,6 +185,12 @@ export default function TaskWorkspacePage({ params }: { params: Promise<{ id: st
     }
     if (uploadFile.size > 25 * 1024 * 1024) {
       alert('File exceeds the maximum allowed size of 25MB.');
+      return;
+    }
+    const ext = uploadFile.name.split('.').pop()?.toLowerCase();
+    const allowedExts = ['pdf', 'png', 'jpg', 'jpeg', 'xlsx', 'csv', 'docx'];
+    if (!ext || !allowedExts.includes(ext)) {
+      alert('Invalid file format. Allowed file types: PDF, PNG, JPG, JPEG, XLSX, CSV, DOCX.');
       return;
     }
     setUploadingDoc(true);
@@ -702,20 +713,51 @@ export default function TaskWorkspacePage({ params }: { params: Promise<{ id: st
                       </div>
                     </div>
 
-                    <a
-                      href={`/api/documents/${d.id}/download`}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: 6,
-                        background: '#EFF6FF',
-                        color: '#2563EB',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Download ⬇
-                    </a>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDoc(d)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: 6,
+                          background: '#2563EB',
+                          color: '#FFFFFF',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          boxShadow: '0 1px 2px rgba(37, 99, 235, 0.2)',
+                          transition: 'background 0.15s ease',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#1D4ED8')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '#2563EB')}
+                      >
+                        👁️ View / Preview
+                      </button>
+
+                      <a
+                        href={`/api/documents/${d.id}/download?token=${encodeURIComponent(token || '')}`}
+                        download={d.file_name}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 6,
+                          background: '#F1F5F9',
+                          color: '#475569',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          border: '1px solid #CBD5E1',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        ⬇ Download
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -768,23 +810,77 @@ export default function TaskWorkspacePage({ params }: { params: Promise<{ id: st
 
                     {c.attachment_url && (
                       <div style={{ marginTop: 8 }}>
-                        {c.attachment_url.startsWith('data:image/') ? (
-                          <a href={c.attachment_url} target="_blank" rel="noreferrer">
-                            <img
-                              src={c.attachment_url}
-                              alt={c.attachment_name || 'Attachment'}
-                              style={{ maxWidth: '100%', maxHeight: 180, borderRadius: 6, border: '1px solid #CBD5E1', objectFit: 'contain', display: 'block' }}
-                            />
-                            <span style={{ fontSize: 11, color: '#2563EB', marginTop: 2, display: 'inline-block' }}>🔍 View Full Image</span>
-                          </a>
+                        {c.attachment_url.startsWith('data:image/') || /\.(png|jpe?g|webp|gif|svg)($|\?)/i.test(c.attachment_url) || /\.(png|jpe?g|webp|gif|svg)$/i.test(c.attachment_name || '') ? (
+                          <div style={{ display: 'inline-block' }}>
+                            <div
+                              onClick={() => {
+                                setLightboxImage({ url: c.attachment_url, name: c.attachment_name || 'Screenshot' });
+                                setImageZoom(1);
+                              }}
+                              style={{
+                                cursor: 'pointer',
+                                border: '1px solid #CBD5E1',
+                                borderRadius: 8,
+                                overflow: 'hidden',
+                                display: 'inline-block',
+                                background: '#FFF',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                              }}
+                              title="Click to view full screenshot in Lightbox"
+                            >
+                              <img
+                                src={c.attachment_url}
+                                alt={c.attachment_name || 'Screenshot'}
+                                style={{ maxWidth: 280, maxHeight: 180, objectFit: 'contain', display: 'block', background: '#F8FAFC' }}
+                              />
+                            </div>
+                            <div style={{ marginTop: 6 }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLightboxImage({ url: c.attachment_url, name: c.attachment_name || 'Screenshot' });
+                                  setImageZoom(1);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: '#EFF6FF',
+                                  border: '1px solid #BFDBFE',
+                                  color: '#1D4ED8',
+                                  padding: '4px 10px',
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                🔍 Click to View Full Screenshot
+                              </button>
+                            </div>
+                          </div>
                         ) : (
-                          <a
-                            href={c.attachment_url}
-                            download={c.attachment_name || 'attachment'}
-                            style={{ fontSize: 12, color: '#2563EB', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                          >
-                            📎 {c.attachment_name || 'Download Attachment'}
-                          </a>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <a
+                              href={c.attachment_url}
+                              download={c.attachment_name || 'attachment'}
+                              style={{
+                                fontSize: 12,
+                                color: '#2563EB',
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                background: '#EFF6FF',
+                                padding: '5px 12px',
+                                borderRadius: 6,
+                                border: '1px solid #BFDBFE',
+                                fontWeight: 600,
+                              }}
+                            >
+                              📎 {c.attachment_name || 'Download Attachment'} ⬇
+                            </a>
+                          </div>
                         )}
                       </div>
                     )}
@@ -1120,6 +1216,281 @@ export default function TaskWorkspacePage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {previewDoc && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(5px)',
+            zIndex: 1500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 960,
+              maxHeight: '92vh',
+              background: '#FFFFFF',
+              borderRadius: 14,
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              border: '1px solid #CBD5E1',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '16px 24px',
+                background: '#F8FAFC',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                <span style={{ fontSize: 24, flexShrink: 0 }}>
+                  {previewDoc.file_name.toLowerCase().endsWith('.pdf') ? '📕' : /\.(png|jpe?g|webp|gif|svg)$/i.test(previewDoc.file_name) ? '🖼️' : '📄'}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {previewDoc.file_name}
+                  </h3>
+                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                    {previewDoc.document_type} • {(previewDoc.file_size / 1024).toFixed(1)} KB • Uploaded by {previewDoc.uploader_name || 'Staff'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <a
+                  href={`/api/documents/${previewDoc.id}/view?token=${encodeURIComponent(token || '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: 6,
+                    background: '#EFF6FF',
+                    color: '#2563EB',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    border: '1px solid #BFDBFE',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                  title="Open document in a separate browser tab"
+                >
+                  Open in New Tab ↗
+                </a>
+
+                <a
+                  href={`/api/documents/${previewDoc.id}/download?token=${encodeURIComponent(token || '')}`}
+                  download={previewDoc.file_name}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 6,
+                    background: '#2563EB',
+                    color: '#FFFFFF',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  ⬇ Download
+                </a>
+
+                <button
+                  onClick={() => setPreviewDoc(null)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 20,
+                    color: '#94A3B8',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    marginLeft: 4,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body / Preview Canvas */}
+            <div style={{ flex: 1, overflow: 'auto', background: '#0F172A', minHeight: 480, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {previewDoc.file_name.toLowerCase().endsWith('.pdf') || previewDoc.mime_type === 'application/pdf' ? (
+                <iframe
+                  src={`/api/documents/${previewDoc.id}/view?token=${encodeURIComponent(token || '')}`}
+                  style={{ width: '100%', height: '74vh', border: 'none', background: '#FFF' }}
+                  title={previewDoc.file_name}
+                />
+              ) : /\.(png|jpe?g|webp|gif|svg)$/i.test(previewDoc.file_name) || previewDoc.mime_type?.startsWith('image/') ? (
+                <div style={{ padding: 24, textAlign: 'center' }}>
+                  <img
+                    src={`/api/documents/${previewDoc.id}/view?token=${encodeURIComponent(token || '')}`}
+                    alt={previewDoc.file_name}
+                    style={{ maxWidth: '100%', maxHeight: '72vh', objectFit: 'contain', borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+                  />
+                </div>
+              ) : (
+                <div style={{ background: '#FFF', padding: 48, borderRadius: 12, textAlign: 'center', maxWidth: 440, margin: '20px auto' }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
+                    {previewDoc.file_name}
+                  </h4>
+                  <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 20px' }}>
+                    This document format ({previewDoc.file_name.split('.').pop()?.toUpperCase()}) requires external spreadsheet or word processing software to view full formulas and data.
+                  </p>
+                  <a
+                    href={`/api/documents/${previewDoc.id}/download?token=${encodeURIComponent(token || '')}`}
+                    download={previewDoc.file_name}
+                    style={{
+                      background: '#2563EB',
+                      color: '#FFF',
+                      padding: '10px 20px',
+                      borderRadius: 8,
+                      textDecoration: 'none',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    ⬇ Download &amp; Open Document
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Screenshot / Image Lightbox Modal */}
+      {lightboxImage && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.88)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 2000,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => {
+            setLightboxImage(null);
+            setImageZoom(1);
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '92vw',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              background: '#0F172A',
+              borderRadius: 12,
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: '#1E293B', borderBottom: '1px solid #334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <span style={{ fontSize: 18 }}>🖼️</span>
+                <span style={{ color: '#F8FAFC', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {lightboxImage.name}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(z => Math.max(0.5, z - 0.25))}
+                  style={{ background: '#334155', color: '#F8FAFC', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 14, cursor: 'pointer' }}
+                  title="Zoom Out"
+                >
+                  -
+                </button>
+                <span style={{ color: '#94A3B8', fontSize: 12, minWidth: 44, textAlign: 'center' }}>
+                  {Math.round(imageZoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(z => Math.min(3, z + 0.25))}
+                  style={{ background: '#334155', color: '#F8FAFC', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 14, cursor: 'pointer' }}
+                  title="Zoom In"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageZoom(1)}
+                  style={{ background: '#334155', color: '#F8FAFC', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}
+                >
+                  Reset
+                </button>
+                <a
+                  href={lightboxImage.url}
+                  download={lightboxImage.name}
+                  style={{ background: '#2563EB', color: '#FFF', padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+                >
+                  ⬇ Download
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLightboxImage(null);
+                    setImageZoom(1);
+                  }}
+                  style={{ background: 'transparent', border: 'none', color: '#94A3B8', fontSize: 20, cursor: 'pointer', marginLeft: 8 }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Image container */}
+            <div style={{ padding: 20, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', maxHeight: 'calc(92vh - 60px)', background: '#090D16' }}>
+              <img
+                src={lightboxImage.url}
+                alt={lightboxImage.name}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '78vh',
+                  transform: `scale(${imageZoom})`,
+                  transformOrigin: 'center center',
+                  transition: 'transform 0.15s ease-out',
+                  borderRadius: 6,
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

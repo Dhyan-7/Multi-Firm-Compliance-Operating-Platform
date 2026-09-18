@@ -3,8 +3,8 @@ import "@/styles/globals.css";
 import AppLayout from "@/components/layout/AppLayout";
 
 export const metadata: Metadata = {
-  title: "ComplianceOS — Multi-Firm Compliance Operating Platform",
-  description: "Enterprise-grade compliance management system for organizations managing multiple companies and firms.",
+  title: "BALAJI GROUPS — CompliCal",
+  description: "Enterprise Multi-Firm Statutory Compliance Operating Platform for BALAJI GROUPS.",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",

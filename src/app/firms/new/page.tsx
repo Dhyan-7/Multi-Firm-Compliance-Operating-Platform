@@ -31,14 +31,12 @@ export default function NewFirmWizard() {
   const [address, setAddress] = useState({
     address_line1: '',
     city: '',
-    state: 'Maharashtra',
+    state: '',
     pincode: '',
   });
 
   const [business, setBusiness] = useState({
     industry: 'Logistics & Transport',
-    employee_count: 25,
-    turnover_band: '5-25 Cr',
     financial_year: '2026-2027',
   });
 
@@ -97,7 +95,6 @@ export default function NewFirmWizard() {
       const entityCode = identity.entity_type_id === 'et_02' ? 'llp' : identity.entity_type_id === 'et_03' ? 'prop' : 'pvt_ltd';
       const isCompany = entityCode.includes('pvt') || entityCode.includes('pub');
       const isLLP = entityCode.includes('llp');
-      const empCount = Number(business.employee_count) || 0;
 
       const recommendedList: any[] = [];
       const initialSelected: Record<string, boolean> = { ...selectedCompliances };
@@ -111,11 +108,7 @@ export default function NewFirmWizard() {
           if (tax.gstin) return { applicable: true, reason: 'Active GSTIN registered' };
         }
         if (cat.includes('TDS') || code.includes('TDS') || code.includes('24Q') || code.includes('26Q')) {
-          if (code.includes('24Q')) {
-            if (empCount > 0) return { applicable: true, reason: 'Salaried personnel payroll withholding' };
-          } else if (code.includes('26Q') || code.includes('TDS_PAY')) {
-            if (tax.tan || isCompany || empCount > 5) return { applicable: true, reason: 'Vendor withholding statutory obligation' };
-          }
+          if (tax.tan || isCompany || isLLP) return { applicable: true, reason: 'Statutory tax withholding obligations' };
         }
         if (cat.includes('INCOME TAX') || code.includes('ITR') || code.includes('ADV_')) {
           return { applicable: true, reason: 'Mandatory corporate direct tax compliance' };
@@ -125,13 +118,13 @@ export default function NewFirmWizard() {
           if (isLLP && (code.includes('DIR') || code.includes('LLP'))) return { applicable: true, reason: 'Annual MCA filing for Limited Liability Partnerships' };
         }
         if (cat.includes('PF') || code.includes('PF')) {
-          if (tax.has_pf || empCount >= 20) return { applicable: true, reason: empCount >= 20 ? 'Statutory PF threshold (20+ employees)' : 'PF registered entity' };
+          if (tax.has_pf || isCompany) return { applicable: true, reason: 'Provident Fund compliance for operational entities' };
         }
         if (cat.includes('ESI') || code.includes('ESI')) {
-          if (tax.has_esi || empCount >= 10) return { applicable: true, reason: empCount >= 10 ? 'Statutory ESI threshold (10+ employees)' : 'ESI registered entity' };
+          if (tax.has_esi) return { applicable: true, reason: 'ESI registered statutory filing' };
         }
         if (cat.includes('PROFESSIONAL TAX') || code.includes('PT')) {
-          if (tax.has_pt || empCount > 0) return { applicable: true, reason: 'State employer PT deduction & remittance' };
+          if (tax.has_pt || isCompany || isLLP) return { applicable: true, reason: 'State employer PT deduction & remittance' };
         }
         if (code.includes('BOOK_CLOSE') || code.includes('BANK_RECON')) {
           return { applicable: true, reason: 'Core statutory accounting governance' };
@@ -219,8 +212,7 @@ export default function NewFirmWizard() {
         state: address.state,
         pincode: address.pincode,
         industry: business.industry,
-        employee_count: Number(business.employee_count),
-        turnover_band: business.turnover_band,
+        financial_year: business.financial_year,
         contacts: contacts.name ? [contacts] : [],
       };
 
@@ -550,7 +542,7 @@ export default function NewFirmWizard() {
                   type="text"
                   value={address.city}
                   onChange={e => setAddress({ ...address, city: e.target.value })}
-                  placeholder="e.g. Mumbai"
+                  placeholder="e.g. Tumakuru"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
                 />
               </div>
@@ -561,7 +553,7 @@ export default function NewFirmWizard() {
                   type="text"
                   value={address.state}
                   onChange={e => setAddress({ ...address, state: e.target.value })}
-                  placeholder="e.g. Maharashtra"
+                  placeholder="e.g. Karnataka"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
                 />
               </div>
@@ -572,7 +564,7 @@ export default function NewFirmWizard() {
                   type="text"
                   value={address.pincode}
                   onChange={e => setAddress({ ...address, pincode: e.target.value })}
-                  placeholder="400001"
+                  placeholder="572101"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
                 />
               </div>
@@ -616,54 +608,30 @@ export default function NewFirmWizard() {
       {/* Step 4: Business Profile */}
       {step === 4 && (
         <div style={{ background: '#FFF', padding: 28, borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>Step 4: Business Scale & Scope</h2>
-          <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 20px' }}>Employee headcount and turnover thresholds trigger statutory obligations.</p>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>Step 4: Industry &amp; Financial Year</h2>
+          <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 20px' }}>Specify primary sector and statutory financial reporting period.</p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Industry</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Industry / Sector</label>
               <input
                 type="text"
                 value={business.industry}
                 onChange={e => setBusiness({ ...business, industry: e.target.value })}
-                placeholder="e.g. Transport & Logistics"
+                placeholder="e.g. Transport &amp; Logistics"
                 style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Employee Count</label>
-              <input
-                type="number"
-                value={business.employee_count}
-                onChange={e => setBusiness({ ...business, employee_count: Number(e.target.value) })}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box' }}
-              />
-              <span style={{ fontSize: 11, color: '#64748B' }}>PF applies at 20+, ESI applies at 10+ employees.</span>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Turnover Band</label>
-              <select
-                value={business.turnover_band}
-                onChange={e => setBusiness({ ...business, turnover_band: e.target.value })}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box', background: '#FFF' }}
-              >
-                <option value="Under 40 Lakhs">Under 40 Lakhs</option>
-                <option value="40 Lakhs - 1.5 Cr">40 Lakhs - 1.5 Cr</option>
-                <option value="1.5 - 5 Cr">1.5 - 5 Cr</option>
-                <option value="5 - 25 Cr">5 - 25 Cr</option>
-                <option value="Above 25 Cr">Above 25 Cr</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Initial Financial Year</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Financial Reporting Year</label>
               <select
                 value={business.financial_year}
                 onChange={e => setBusiness({ ...business, financial_year: e.target.value })}
                 style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #CBD5E1', boxSizing: 'border-box', background: '#FFF' }}
               >
+                <option value="2024-2025">FY 2024-2025</option>
+                <option value="2025-2026">FY 2025-2026</option>
                 <option value="2026-2027">FY 2026-2027 (Current)</option>
                 <option value="2027-2028">FY 2027-2028</option>
               </select>
@@ -920,7 +888,7 @@ export default function NewFirmWizard() {
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}}
+                          onChange={() => { }}
                           style={{ width: 16, height: 16, cursor: 'pointer' }}
                         />
                         <div style={{ flex: 1 }}>
@@ -1383,13 +1351,8 @@ export default function NewFirmWizard() {
               <div style={{ fontSize: 12, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', marginBottom: 10 }}>
                 🏢 Entity &amp; Legal Profile
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{identity.display_name}</div>
-              <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Legal Name: {identity.legal_name || identity.display_name}</div>
               <div style={{ fontSize: 12, color: '#475569', marginTop: 6 }}>
-                Industry: <strong>{business.industry}</strong> • Scale: <strong>{business.employee_count} Employees</strong>
-              </div>
-              <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
-                Turnover: <strong>{business.turnover_band}</strong> • FY: <strong>{business.financial_year}</strong>
+                Industry: <strong>{business.industry}</strong> • FY: <strong>{business.financial_year}</strong>
               </div>
             </div>
 

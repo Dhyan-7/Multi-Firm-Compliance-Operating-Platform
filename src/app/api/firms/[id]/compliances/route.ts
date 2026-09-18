@@ -35,7 +35,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       id: firm.id,
       name: firm.display_name,
       entity_type_code: firm.entity_type_code || '',
-      employee_count: firm.employee_count,
       has_gstin: !!firm.gstin,
       has_pan: !!firm.pan,
     });

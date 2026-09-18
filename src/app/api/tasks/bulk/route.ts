@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import getDb from '@/lib/db';
 import { getUserFromRequest } from '@/lib/auth';
+import { dispatchNotificationEvent } from '@/lib/notifications/engine';
 
 export async function POST(request: Request) {
   try {
@@ -31,11 +32,6 @@ export async function POST(request: Request) {
         WHERE id = ?
       `);
 
-      const notifStmt = db.prepare(`
-        INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
-        VALUES (?, 'task_assigned', 'Task Assigned', 'You have been assigned to a compliance task', 'task', ?)
-      `);
-
       const auditStmt = db.prepare(`
         INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, new_data)
         VALUES (?, ?, ?, 'BULK_TASK_ASSIGN', 'task', ?, 'Bulk Assignment', ?)
@@ -43,11 +39,40 @@ export async function POST(request: Request) {
 
       for (const id of task_ids) {
         updateStmt.run(assignee_id || null, department_id || null, id);
-        if (assignee_id) {
-          notifStmt.run(assignee_id, id);
-        }
         auditStmt.run(user.organization_id, user.id, user.name, id, JSON.stringify({ assignee_id, department_id }));
         updatedCount++;
+      }
+
+      // Fetch task details for consolidated bulk notification
+      if (assignee_id) {
+        const placeholders = task_ids.map(() => '?').join(',');
+        const taskDetails = db.prepare(`
+          SELECT t.id, COALESCE(t.task_name, c.name, 'Task') as taskName,
+                 f.display_name as firmName, c.name as complianceName,
+                 t.priority, t.due_date as dueDate
+          FROM compliance_tasks t
+          JOIN firms f ON t.firm_id = f.id
+          LEFT JOIN compliances c ON t.compliance_id = c.id
+          WHERE t.id IN (${placeholders})
+        `).all(...task_ids) as any[];
+
+        dispatchNotificationEvent({
+          eventType: 'BULK_ASSIGNMENT',
+          entityType: 'task',
+          entityId: 'bulk',
+          triggeredBy: user.id,
+          recipientIds: [assignee_id],
+          data: {
+            bulkTasks: taskDetails.map(td => ({
+              id: td.id,
+              taskName: td.taskName,
+              firmName: td.firmName,
+              complianceName: td.complianceName || td.taskName,
+              priority: td.priority || 'medium',
+              dueDate: td.dueDate,
+            })),
+          },
+        }).catch(err => console.error('Bulk assignment email dispatch error:', err));
       }
 
       return NextResponse.json({ message: `Successfully assigned ${updatedCount} tasks.`, count: updatedCount });

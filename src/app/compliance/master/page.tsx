@@ -104,6 +104,22 @@ export default function ComplianceMasterPage() {
   const handleSaveCompliance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    if (!compForm.name.trim()) {
+      alert('Compliance Name is required.');
+      return;
+    }
+    if (!compForm.code.trim()) {
+      alert('Statutory Code is required.');
+      return;
+    }
+    if (!compForm.category_id) {
+      alert('Please select a Category.');
+      return;
+    }
+    if (compForm.due_day < 1 || compForm.due_day > 31) {
+      alert('Due Day must be between 1 and 31.');
+      return;
+    }
     setSavingComp(true);
     setNotice('');
     try {

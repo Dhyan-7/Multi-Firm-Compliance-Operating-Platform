@@ -11,8 +11,9 @@ export async function GET(request: Request) {
     const org = db.prepare("SELECT * FROM organizations WHERE id = 'org_001'").get();
     const reminderRules = db.prepare("SELECT * FROM reminder_rules ORDER BY days_before DESC").all();
     const systemSettings = db.prepare("SELECT * FROM system_settings").all();
+    const notificationSettings = db.prepare("SELECT * FROM notification_settings WHERE id = 'settings_001'").get();
 
-    return NextResponse.json({ organization: org, reminderRules, systemSettings });
+    return NextResponse.json({ organization: org, reminderRules, systemSettings, notificationSettings });
   } catch (error) {
     console.error('Settings fetch error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -25,7 +26,7 @@ export async function PUT(request: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { organization, reminderRules } = body;
+    const { organization, reminderRules, notificationSettings } = body;
     const db = getDb();
 
     if (organization) {
@@ -51,6 +52,40 @@ export async function PUT(request: Request) {
           `).run(rule.is_active || rule.enabled ? 1 : 0, rule.is_active || rule.enabled ? 1 : 0, rule.channel || 'both', rule.id);
         }
       }
+    }
+
+    if (notificationSettings) {
+      db.prepare(`
+        INSERT INTO notification_settings (
+          id, email_mode, smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass,
+          from_name, from_email, daily_summary_enabled, reminder_intervals, updated_at
+        ) VALUES (
+          'settings_001', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+        )
+        ON CONFLICT(id) DO UPDATE SET
+          email_mode = excluded.email_mode,
+          smtp_host = excluded.smtp_host,
+          smtp_port = excluded.smtp_port,
+          smtp_secure = excluded.smtp_secure,
+          smtp_user = excluded.smtp_user,
+          smtp_pass = excluded.smtp_pass,
+          from_name = excluded.from_name,
+          from_email = excluded.from_email,
+          daily_summary_enabled = excluded.daily_summary_enabled,
+          reminder_intervals = excluded.reminder_intervals,
+          updated_at = CURRENT_TIMESTAMP
+      `).run(
+        notificationSettings.email_mode || 'production',
+        notificationSettings.smtp_host || '',
+        parseInt(notificationSettings.smtp_port) || 587,
+        notificationSettings.smtp_secure ? 1 : 0,
+        notificationSettings.smtp_user || '',
+        notificationSettings.smtp_pass || '',
+        notificationSettings.from_name || 'CompliCal Alerts',
+        notificationSettings.from_email || 'alerts@balajigroups.com',
+        notificationSettings.daily_summary_enabled ? 1 : 0,
+        notificationSettings.reminder_intervals || '7,3,1,0'
+      );
     }
 
     // Audit log

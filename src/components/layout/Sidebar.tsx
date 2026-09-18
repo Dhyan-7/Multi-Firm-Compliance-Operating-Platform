@@ -91,9 +91,9 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.3px', color: '#FFF' }}>
-                ComplianceOS
+                CompliCal
               </div>
-              <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 500 }}>MULTI-FIRM ENTERPRISE</div>
+              <div style={{ fontSize: 10, color: '#93C5FD', fontWeight: 600, letterSpacing: '0.05em' }}>BALAJI GROUPS</div>
             </div>
           </div>
         )}
@@ -230,7 +230,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
             flexShrink: 0,
           }}
         >
-          {user?.name ? user.name.charAt(0).toUpperCase() : 'D'}
+          {user?.name ? user.name.charAt(0).toUpperCase() : 'B'}
         </div>
         {!collapsed && (
           <div style={{ overflow: 'hidden', flex: 1 }}>
@@ -241,7 +241,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
               {user?.role_name || 'Super Admin'} • Profile ⚙️
             </div>
             <div style={{ fontSize: 9, color: '#64748B', marginTop: 3, whiteSpace: 'nowrap' }}>
-              All Rights Reserved © 2026 DHYAN
+              BALAJI GROUPS • CompliCal
             </div>
           </div>
         )}

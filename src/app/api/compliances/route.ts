@@ -28,15 +28,29 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const db = getDb();
     const data = await request.json();
+    if (!data.name?.trim()) {
+      return NextResponse.json({ error: 'Compliance Name is required' }, { status: 400 });
+    }
+    if (!data.code?.trim()) {
+      return NextResponse.json({ error: 'Statutory Code / Act is required' }, { status: 400 });
+    }
+    if (!data.category_id) {
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
+    }
+    if (!data.frequency) {
+      return NextResponse.json({ error: 'Filing Frequency is required' }, { status: 400 });
+    }
+
     const id = `comp_${Date.now()}`;
     db.prepare(`INSERT INTO compliances (id, category_id, name, code, description, authority, frequency, due_day, grace_period_days, priority, default_department_id, regulatory_reference, notes, status)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-      id, data.category_id, data.name, data.code, data.description, data.authority, data.frequency, data.due_day, data.grace_period_days || 0, data.priority || 'medium', data.default_department_id, data.regulatory_reference, data.notes, 'active'
+      id, data.category_id, data.name.trim(), data.code.trim().toUpperCase(), data.description || '', data.authority || '', data.frequency, data.due_day ? Number(data.due_day) : null, data.grace_period_days ? Number(data.grace_period_days) : 0, data.priority || 'medium', data.default_department_id || null, data.regulatory_reference || '', data.notes || '', 'active'
     );
-    db.prepare("INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, new_data) VALUES (?,?,?,'COMPLIANCE_CREATED','compliance',?,?,?)").run(user.organization_id, user.id, user.name, id, data.name, JSON.stringify(data));
-    return NextResponse.json({ id, message: 'Compliance created' }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    db.prepare("INSERT INTO audit_logs (organization_id, user_id, user_name, action, entity_type, entity_id, entity_name, new_data) VALUES (?,?,?,'COMPLIANCE_CREATED','compliance',?,?,?)").run(user.organization_id, user.id, user.name, id, data.name.trim(), JSON.stringify(data));
+    return NextResponse.json({ id, message: 'Compliance created successfully' }, { status: 201 });
+  } catch (error: any) {
+    console.error('Create compliance error:', error);
+    return NextResponse.json({ error: error?.message || 'Internal server error' }, { status: 500 });
   }
 }
 
