@@ -39,8 +39,8 @@ export function getEmailConfig() {
   const smtpHost = process.env.SMTP_HOST || settings.smtp_host || '';
   const smtpPort = parseInt(process.env.SMTP_PORT || String(settings.smtp_port || 587));
   const smtpSecure = process.env.SMTP_SECURE === 'true' || Boolean(settings.smtp_secure);
-  const smtpUser = process.env.SMTP_USERNAME || settings.smtp_user || '';
-  const smtpPass = process.env.SMTP_PASSWORD || settings.smtp_pass || '';
+  const smtpUser = process.env.SMTP_USERNAME || process.env.SMTP_USER || settings.smtp_user || '';
+  const smtpPass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || settings.smtp_pass || '';
   const fromName = process.env.EMAIL_FROM_NAME || settings.from_name || 'CompliCal Alerts';
   const fromEmail = process.env.EMAIL_FROM || settings.from_email || 'alerts@balajigroups.com';
 
